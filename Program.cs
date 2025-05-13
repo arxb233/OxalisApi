@@ -18,7 +18,7 @@ namespace OxalisApi
             // Add services to the container.
             builder.Services.AddAuthorization();
 
-            builder.Services.AddQuartzJob<HayFrpJob>("HayFrpJob", "HayFrpJob-trigger", "0 03 12 * * ?"); //凌晨1点30分
+            builder.Services.AddQuartzJob<HayFrpJob>("HayFrpJob", "HayFrpJob-trigger", "0 20 08 * * ?"); //凌晨1点30分
 
             var app = builder.Build();
 

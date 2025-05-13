@@ -25,7 +25,7 @@ namespace OxalisApi.Job
             //{"type":"sign","csrf":""} 签到
             //{"type":"csrf","csrf":""} 不掉线
             //{"type":"info","csrf":""} 获取用户信息
-            List<(string, string)> result = [("nixue", "123456"), ("sign", "95Y8fe8DPSS622MOMJ2p")];
+            List<(string, string)> result = [("nixue", "123456"), ("baris", "Qaz741236985.")];
             foreach (var item in result)
             {
                 var login = await LoginAsync(item.Item1, item.Item2);
