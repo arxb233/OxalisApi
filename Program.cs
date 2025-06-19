@@ -2,6 +2,7 @@ using Quartz;
 using System.Threading.Tasks;
 using Tool.Web;
 using OxalisApi.Job;
+using HKRM_Server_C.CommonBusiness;
 
 namespace OxalisApi
 {
@@ -23,12 +24,12 @@ namespace OxalisApi
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-
+            
             app.UseRouting();
             app.UseAuthorization();
             app.MapAshxs();
             //app.MapControllers();
-
+            DbModel.UseDbService();
             await app.RunAsync();
         }
     }
@@ -48,7 +49,8 @@ namespace OxalisApi
                     .WithIdentity(triggerName)
                     .WithCronSchedule(cronSchedule));
             });
-
+            DbModel.AddDbService(services);
+            
             services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
         }
     }
