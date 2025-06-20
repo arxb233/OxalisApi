@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Tool.Web.Api;
 
-namespace OxalisApi.Controllers
+namespace OxalisApi.Controllers.Frp
 {
     public class HayFrp : MinApi
     {
