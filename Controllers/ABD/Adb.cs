@@ -31,7 +31,7 @@ namespace OxalisApi.Controllers.ABD
                 var response = _adbClient.ExecuteRemoteEnumerableAsync("reboot update", device, Encoding.UTF8, CancellationToken.None);
                 await foreach (var item in response) { }
 
-                return new JsonOut(new { message = $"设备 {deviceSerial} 已重启进入更新模式" });
+                return ApiOut.Json(new { message = $"设备 {deviceSerial} 已重启进入更新模式" });
             }
             catch (Exception ex)
             {
