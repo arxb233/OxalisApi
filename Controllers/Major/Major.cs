@@ -57,7 +57,7 @@ namespace OxalisApi.Controllers.Major
             try { var Proddict = await dbHelper.SelectDictionaryAsync(str); return new JsonOut(new { message = Proddict }); } catch { return new JsonOut(new { message = "" }); }
         }
         [Ashx(State = AshxState.Get)]
-        public async Task<IApiOut> GetLogoUrl([ApiVal(Val.Service)] IHttpClientFactory clientFactory, [ApiVal(Val.Service)] ILogger<Major> logger, string name)
+        public async Task<IApiOut> GetLogoUrl(string name)
         {
             var dbHelper = DbBase.GetDynamicDb("MAJOR");
             var Proddict = await dbHelper.SelectDictionaryAsync($"select name,logourl from SchoolLogo where name=N'{name}'");
