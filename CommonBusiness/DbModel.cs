@@ -25,7 +25,7 @@ namespace OxalisApi.CommonBusiness
         {
 #if DEBUG
             var logger = LoggerFactory?.CreateLogger("Sql.Encrypt");
-            logger?.LogInformation("DynamicLibrary：{Encrypt}", Tool.Utils.Encryption.AES.Encrypt("user id=sa;password=Qaz741236985.;initial catalog={0};data source=baris.top,2233;TrustServerCertificate=true", secretkey));
+            logger?.LogInformation("DynamicLibrary：{Encrypt}", Tool.Utils.Encryption.AES.Encrypt("user id=sa;password=Qaz741236985.;initial catalog={0};data source=sqlserver;TrustServerCertificate=true", secretkey));
 #endif
         }
 
