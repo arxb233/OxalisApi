@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace HKRM_Server_C.CommonBusiness
+namespace OxalisApi.CommonBusiness
 {
     public class VueClass
     {

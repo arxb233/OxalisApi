@@ -1,19 +1,7 @@
-﻿using AdvancedSharpAdbClient;
-using AdvancedSharpAdbClient.Models;
-using HKRM_Server_C.CommonBusiness;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient.DataClassification;
-using System;
-using System.Net.Http;
-using System.Text;
-using System.Text.Json;
-using Tool;
+﻿using OxalisApi.CommonBusiness;
 using Tool.SqlCore;
-using Tool.Utils;
 using Tool.Web.Api;
-using Tool.Web.Routing;
-using static HKRM_Server_C.CommonBusiness.VueClass;
-using static System.Net.Mime.MediaTypeNames;
+using static OxalisApi.CommonBusiness.VueClass;
 
 namespace OxalisApi.Controllers.Major
 {

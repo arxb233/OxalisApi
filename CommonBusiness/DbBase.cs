@@ -4,13 +4,13 @@ using Tool.Utils.Data;
 using Tool.SqlCore;
 using Tool.Utils;
 
-namespace HKRM_Server_C.CommonBusiness
+namespace OxalisApi.CommonBusiness
 {
     class DbBase
     {
         public static DynamicDbHelper GetDynamicDb(string libraryName)
         {
-            var dbFactory = ObjectExtension.Provider.GetService<DynamicDbFactory>();
+            var dbFactory = ObjectExtension.Provider.GetService<DynamicDbFactory>() ?? throw new Exception("未注册服务！");
             return dbFactory.GetDbHelper(libraryName);
         }
 
