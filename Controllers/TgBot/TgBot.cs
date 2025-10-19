@@ -1,4 +1,5 @@
-﻿using OxalisApi.CommonBusiness;
+﻿using Microsoft.AspNetCore.Mvc;
+using OxalisApi.CommonBusiness;
 using Telegram.Bot;
 using Tool.Web.Api;
 
@@ -8,10 +9,12 @@ namespace OxalisApi.Controllers.TgBot
     {
         private TelegramBotClient? _bot;
         [Ashx(State = AshxState.Get)]
-        public async Task<IApiOut> Create(string token, long chatid)
+        public async Task<IApiOut> Create(string Token,long ChatId,string DownApiUrl)
         {
+            TgBotClassRespose tb = new() { Token = Token,ChatId= ChatId,DownApiUrl= DownApiUrl };
             if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
-            var TgBot = new TgBotClass(token,chatid);
+            if (tb is null || string.IsNullOrWhiteSpace(tb.Token) || string.IsNullOrWhiteSpace(tb.DownApiUrl)) { return ApiOut.Write("创建数据不能为空！"); }
+            var TgBot = new TgBotClass(tb);
             _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");
         }
