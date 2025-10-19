@@ -2,7 +2,7 @@ using Quartz;
 using System.Threading.Tasks;
 using Tool.Web;
 using OxalisApi.Job;
-using HKRM_Server_C.CommonBusiness;
+using OxalisApi.CommonBusiness;
 
 namespace OxalisApi
 {

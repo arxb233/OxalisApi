@@ -8,13 +8,13 @@ using System.Runtime.Versioning;
 using Tool.Utils;
 using Tool.Utils.Data;
 
-namespace HKRM_Server_C.CommonBusiness
+namespace OxalisApi.CommonBusiness
 {
     public class DbModel
     {
         private const string secretkey = "{B84E25BE-8C5C-4704-8E47-6892B14B0BA6}";
 
-        internal static ILoggerFactory? LoggerFactory => ObjectExtension.Provider.GetService<ILoggerFactory>();
+        internal static ILoggerFactory LoggerFactory => ObjectExtension.Provider.GetService<ILoggerFactory>() ?? throw new Exception("未注册服务！");
 
         public static void AddDbService(IServiceCollection services)
         {
@@ -62,7 +62,7 @@ namespace HKRM_Server_C.CommonBusiness
     public abstract class BaseDbHelper : DbHelper
     {
         private readonly LazyConcurrentDictionary<string, ITableProvider> Tables;
-        public string ConnectionDbString => base.ConnectionString;
+        public string ConnectionDbString => ConnectionString;
 
         protected BaseDbHelper(string connString, DbProviderType dbProviderType, IDbProvider dbProvider, ILogger logger) : base(connString, dbProviderType, dbProvider, logger)
         {

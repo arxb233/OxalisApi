@@ -1,13 +1,10 @@
-﻿
-
+﻿using OxalisApi.CommonBusiness;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
-using Tool.Web.Api;
-using OxalisApi.CommonBusiness;
-using Tool.Utils;
 using Tool;
+using Tool.Utils;
 
 namespace OxalisApi.Controllers.SD
 {
