@@ -19,8 +19,4 @@
     <PackageReference Include="Tool.Net" Version="5.5.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\AutoDL\" />
-  </ItemGroup>
-
 </Project>

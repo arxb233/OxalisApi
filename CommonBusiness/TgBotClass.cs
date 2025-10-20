@@ -39,6 +39,7 @@ namespace OxalisApi.CommonBusiness
                 {
                     await _bot.SendMessage(msg.Chat.Id, $"视频链接获取成功，正在下载视频，请耐心等待....");
                     var video = await VideoDownClass.DownLoad(tb.DownApiUrl, MatchUrl.Value);
+                    await AutoDLClass.Check(tb.Authorization);
                     if (video != Stream.Null && video.Length > 0) { await _bot.SendVideo(msg.Chat.Id, video); }
                     return;
                 }
@@ -63,5 +64,9 @@ namespace OxalisApi.CommonBusiness
         public required string Token { get; set; }
         public long ChatId { get; set; }
         public required string DownApiUrl { get; set; }
+
+        public required string Authorization { get; set; }
+
+        public required string Instance_uuid { get; set; }
     }
 }
