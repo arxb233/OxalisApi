@@ -9,7 +9,7 @@ namespace OxalisApi.CommonBusiness
 {
     public class VideoDownClass()
     {
-        public static async Task<Stream> DownLoad(string DownApiUrl,string MatchUrl)
+        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl)
         {
             string url = $"{DownApiUrl}/api/download?url={MatchUrl}&prefix=true&with_watermark=false";
             var video = await GetStreamAsync(url);
