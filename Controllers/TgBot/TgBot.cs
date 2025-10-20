@@ -8,10 +8,10 @@ namespace OxalisApi.Controllers.TgBot
     public class TgBot : MinApi
     {
         private TelegramBotClient? _bot;
-        [Ashx(State = AshxState.Get)]
-        public async Task<IApiOut> Create(string Token,long ChatId,string DownApiUrl)
+        [Ashx(State = AshxState.Post)]
+        public async Task<IApiOut> Create([ApiVal(Val.BodyJson)] TgBotClassRespose tb)
         {
-            TgBotClassRespose tb = new() { Token = Token,ChatId= ChatId,DownApiUrl= DownApiUrl };
+            //TgBotClassRespose tb = new() { Token = Token,ChatId= ChatId,DownApiUrl= DownApiUrl };
             if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
             if (tb is null || string.IsNullOrWhiteSpace(tb.Token) || string.IsNullOrWhiteSpace(tb.DownApiUrl)) { return ApiOut.Write("创建数据不能为空！"); }
             var TgBot = new TgBotClass(tb);
