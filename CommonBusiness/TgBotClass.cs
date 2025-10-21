@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.WebSockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
@@ -93,40 +94,46 @@ namespace OxalisApi.CommonBusiness
 
                         #region
                         await _bot.SendMessage(msg.Chat.Id, $"工作流获取成功,正在启动服务并执行工作流....");
-                        using ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUIPort}", tb.ComfyUIPrompt, PromptStream.ToArray().ToByteString(), (_msg) => _bot.SendMessage(msg.Chat.Id, _msg));
-                        do{if (await comfyUIClass.Prompt() is (bool, string) PromptResult && PromptResult.Item1) {await _bot.SendMessage(msg.Chat.Id, PromptResult.Item2);break; }await Task.Delay(10000);} while (true);
+                        ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUIPort}", tb.ComfyUIPrompt, PromptStream.ToArray().ToByteString(), (_msg) => _bot.SendMessage(msg.Chat.Id, _msg));
+                        do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(10000); } while (true);
+                        if (await comfyUIClass.Prompt() is (bool, string) PromptResult && !PromptResult.Item1) { await _bot.SendMessage(msg.Chat.Id, PromptResult.Item2); await AutoDLClose(); return; }
                         #endregion
 
                         #region
-                        //await _bot.SendMessage(msg.Chat.Id, $"工作流执行成功,正在获取工作流执行状态....");
-                        //await comfyUIClass.Websocket();
-                        //await comfyUIClass.Task;
-                        await Task.Delay(TimeSpan.FromMinutes(2));
+                        await _bot.SendMessage(msg.Chat.Id, $"工作流执行成功,正在获取工作流执行状态....");
+                        do
+                        {
+                            if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1 && GetPromptResult.Item2 == 0) { break; }
+                            await _bot.SendMessage(msg.Chat.Id, $"当前剩余任务列队的数量{GetPromptResult.Item2},1分钟后重新获取");
+                            await Task.Delay(TimeSpan.FromMinutes(1));
+                        } while (true);//await comfyUIClass.Websocket();//await comfyUIClass.Task;
                         #endregion
 
                         #region
                         await _bot.SendMessage(msg.Chat.Id, $"工作流执行完成,正在下载生成的视频....");
                         var AIvideo = sshHelper.DownloadStream(tb.OutputPath[0]);
-                        if (AIvideo == Stream.Null || AIvideo.Length == 0) { await _bot.SendVideo(msg.Chat.Id, "视频获取失败！"); return; }
+                        if (AIvideo == Stream.Null || AIvideo.Length == 0) { await _bot.SendVideo(msg.Chat.Id, "视频获取失败！"); await AutoDLClose(); return; }
                         foreach (var path in tb.OutputPath) { sshHelper.DeleteFile(path); }
-                        await _bot.SendVideo(msg.Chat.Id, video);
+                        //await _bot.SendVideo(msg.Chat.Id, video);
                         await _bot.SendVideo(msg.Chat.Id, AIvideo);
                         #endregion
-
-                        #region
-                        var Close = await AutoDLClass.Close(tb.Authorization, tb.Instance_uuid);
-                        if (!Close) { await _bot.SendMessage(msg.Chat.Id, $"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
-                        #endregion
+                        await AutoDLClose();
                     }
                     catch (Exception ex)
                     {
-                        var Close = await AutoDLClass.Close(tb.Authorization, tb.Instance_uuid);
-                        if (!Close) { await _bot.SendMessage(msg.Chat.Id, $"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
+                        await AutoDLClose();
                         await _bot.SendMessage(msg.Chat.Id, $"❌ 操作失败,已关闭实例: {ex.Message}");
                     }
                     return;
                 }
                 await _bot.SendMessage(msg.Chat.Id, $"我已收到消息:{detail}！");
+                async Task AutoDLClose()
+                {
+                    #region
+                    var Close = await AutoDLClass.Close(tb.Authorization, tb.Instance_uuid);
+                    if (!Close) { await _bot.SendMessage(msg.Chat.Id, $"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
+                    #endregion
+                }
             }
         }
         public async Task OnUpdate(Update update)

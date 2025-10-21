@@ -52,6 +52,19 @@ namespace OxalisApi.CommonBusiness
                 return (false, ex.Message);
             }
         }
+        public async Task<(bool,int)> GetPrompt()
+        {
+            try
+            {
+                var response = await GetAsync($"http://{ComfyUiUrl}/prompt");
+                if (response.TryGet(out var message, "exec_info", "queue_remaining")) { return (true, message); }
+                return (false, -1);
+            }
+            catch
+            {
+                return (false,-1);
+            }
+        }
 
         private async ValueTask Receive(ReceiveBytes<WebSocket> wsmsg)
         {
@@ -96,6 +109,10 @@ namespace OxalisApi.CommonBusiness
         {
             await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}&test=");
         }
+        private static async Task<JsonVar> GetAsync(string url)
+        {
+            return await SendAsync(HttpMethod.Get, url,"");
+        }
         private static async Task<JsonVar> PostAsync(string url, object json)
         {
             return await SendAsync(HttpMethod.Post, url, json);
@@ -113,7 +130,7 @@ namespace OxalisApi.CommonBusiness
 
         public void Dispose()
         {
-            webClientAsync.Dispose();
+            //webClientAsync.Dispose();
             ((IDisposable)Task).Dispose();
             GC.SuppressFinalize(this);
         }
