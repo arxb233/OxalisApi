@@ -55,7 +55,7 @@ namespace OxalisApi.Job
 
         private async Task<JsonVar> PostAsync(object json)
         {
-            var request = new HttpRequestMessage
+            using var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
                 RequestUri = new Uri("https://api.hayfrp.com/user"),

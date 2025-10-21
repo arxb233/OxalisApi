@@ -88,7 +88,7 @@ namespace OxalisApi.CommonBusiness
         }
         private static async Task<JsonVar> SendAsync(HttpMethod HttpMethod, string url, string Authorization, object json)
         {
-            var request = new HttpRequestMessage
+            using var request = new HttpRequestMessage
             {
                 Method = HttpMethod,
                 RequestUri = new Uri(url),
