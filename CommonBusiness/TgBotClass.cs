@@ -176,8 +176,6 @@ namespace OxalisApi.CommonBusiness
         public required string Password { get; set; }
         public required string InputPath { get; set; }
         public required string[] OutputPath { get; set; }
-
-        public required string ComfyUIIsStart { get; set; }
         public uint ComfyUIPort { get; set; }
         public required string ComfyUIPrompt { get; set; }
     }
