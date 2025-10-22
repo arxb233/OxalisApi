@@ -67,7 +67,7 @@ namespace OxalisApi.CommonBusiness
 
                         #region
                         await SendProcess($"4.当前AutoDL账户余额为{Wallet}元,正在查询AutoDL设备信息....");
-                        var Check = await AutoDLClass.Check(tb.Authorization, tb.Instance_uuid, tb.Payload);
+                        var Check = await AutoDLClass.Check(tb.Authorization, tb.Instance_uuid);
                         if (Check == -1) { await SendProcess($"当前AutoDL实列已存在,请稍后使用！"); return; }
                         if (Check == 0) { await SendProcess($"当前AutoDL实列没有可用GPU,请稍后使用！"); return; }
                         #endregion
@@ -76,7 +76,7 @@ namespace OxalisApi.CommonBusiness
                         await SendProcess($"5.当前AutoDL实列可用GPU为{Check}个,正在进行开机,预计30s....");
                         var Open = await AutoDLClass.Open(tb.Authorization, tb.Instance_uuid, tb.Payload);
                         if (!Open) { await SendProcess($"当前AutoDL实列开机失败,请联系管理员！"); return; }
-                        do { if (await AutoDLClass.Check(tb.Authorization, tb.Instance_uuid, tb.Payload) == -1) { break; }; await Task.Delay(5000); } while (true);
+                        do { if (await AutoDLClass.Check(tb.Authorization, tb.Instance_uuid) == -1) { break; }; await Task.Delay(5000); } while (true);
                         #endregion
 
                         #region

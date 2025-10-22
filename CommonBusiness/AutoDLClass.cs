@@ -43,7 +43,7 @@ namespace OxalisApi.CommonBusiness
             }
             return false;
         }
-        public static async Task<int> Check(string Authorization, string instance_uuid, string payload)
+        public static async Task<int> Check(string Authorization, string instance_uuid)
         {
             if (Authorization.IsNullOrWhiteSpace()) { return 0; }
             string url = "https://www.autodl.com/api/v1/instance";
