@@ -106,7 +106,11 @@ namespace OxalisApi.CommonBusiness
                         await SendProcess($"10.工作流执行成功,正在获取工作流执行状态....");
                         do
                         {
-                            if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1 && GetPromptResult.Item2 == 0) { break; }
+                            if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1)
+                            {
+                                if (GetPromptResult.Item2 == 0) { break; }
+                                if (GetPromptResult.Item2 == -1) { await SendProcess("工作流执行失败！"); await AutoDLClose(); return; }    
+                            }
                             await SendProcess($"当前剩余任务列队的数量{GetPromptResult.Item2},1分钟后重新获取");
                             await Task.Delay(TimeSpan.FromMinutes(1));
                         } while (true);//await comfyUIClass.Websocket();//await comfyUIClass.Task;
@@ -136,7 +140,7 @@ namespace OxalisApi.CommonBusiness
                 async Task<Message> SendProcess(string text)
                 {
                     stringBuilder.AppendLine(text);
-                    return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id,stringBuilder.ToString());
+                    return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, stringBuilder.ToString());
                 }
                 async Task AutoDLClose()
                 {
