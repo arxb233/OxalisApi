@@ -1,4 +1,5 @@
-﻿using Renci.SshNet;
+﻿using Azure;
+using Renci.SshNet;
 using Tool;
 using Tool.Sockets.WebHelper;
 using Tool.Utils;
@@ -73,7 +74,7 @@ namespace OxalisApi.CommonBusiness
             return ms;
         }
         
-        public bool fileExists(string localPath)
+        public bool FileExists(string localPath)
         {
              return sftp.Exists(localPath);
         }

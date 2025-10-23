@@ -19,6 +19,7 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Tool;
 using Tool.Sockets.Kernels;
+using Tool.Utils;
 using Tool.Utils.TaskHelper;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -27,7 +28,6 @@ namespace OxalisApi.CommonBusiness
     public partial class TgBotClass(TgBotClassRespose tb)
     {
         public TelegramBotClient _bot = new(tb.TgBot.Token);
-        public MemoryStream _outputStream = new();
         public async Task<TelegramBotClient> Start()
         {
             var me = await _bot.GetMe();
@@ -89,7 +89,7 @@ namespace OxalisApi.CommonBusiness
                         sshHelper.UploadStream(video, tb.ComfyUI.InputPath);
                         await SendProcess($"8.视频上传成功,正在获取工作流....");
                         using var PromptStream = sshHelper.DownloadStream(tb.ComfyUI.Prompt);
-                        if (sshHelper.fileExists(tb.ComfyUI.OutputPath[0])) { await SendProcess("输出文件已存在,请检查删除后重新执行！"); await AutoDLClose(); return; }
+                        if (sshHelper.FileExists(tb.ComfyUI.OutputPath[0])) { await SendProcess("输出文件已存在,请检查删除后重新执行！"); await AutoDLClose(); return; }
                         #endregion
 
                         #region
@@ -117,7 +117,7 @@ namespace OxalisApi.CommonBusiness
                         await SendProcess($"11.工作流执行完成,正在下载生成的视频....");
                         using var AIvideo = sshHelper.DownloadStream(tb.ComfyUI.OutputPath[0]);
                         if (AIvideo == Stream.Null || AIvideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
-                        _outputStream.Position = 0; AIvideo.CopyTo(_outputStream);
+                        await Ext.DownloadFileAsStreamAsync(AIvideo, tb.TgBot.CacheFile);
                         using var InputVideo = sshHelper.DownloadStream(tb.ComfyUI.InputPath);
                         if (InputVideo == Stream.Null || InputVideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
                         await _bot.SendVideo(tb.TgBot.ChatVideoId, InputVideo, msg.Text);
@@ -147,10 +147,13 @@ namespace OxalisApi.CommonBusiness
             }
             if (msg.Caption != null && msg.Chat.Id == tb.TgBot.ChatVideoGroupId && BotRegex().Match(msg.Caption) is Match MatchBotGroup && MatchBotGroup.Success)
             {
-                _outputStream.Seek(0, SeekOrigin.Begin);
-                if (_outputStream.Length == 0) { await _bot.SendMessage(msg.Chat.Id, "视频获取失败！", ParseMode.None, msg); }
-                await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
-                _outputStream.SetLength(0);
+                try
+                {
+                    using var _outputStream = Ext.ReadLocalFileAsStream(tb.TgBot.CacheFile);
+                    await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
+                    Ext.DeleteFile(tb.TgBot.CacheFile);
+                }
+                catch { }
             }
         }
         public async Task OnUpdate(Update update)
@@ -191,6 +194,7 @@ namespace OxalisApi.CommonBusiness
         public long ChatId { get; set; }
         public long ChatVideoId { get; set; }
         public long ChatVideoGroupId { get; set; }
+        public required string CacheFile { get; set; }
     }
     public class DownApiInfo
     {
