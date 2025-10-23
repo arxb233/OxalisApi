@@ -159,7 +159,7 @@ namespace OxalisApi.CommonBusiness
         }
         [GeneratedRegex(@"@[A-Za-z0-9_]+_bot\b")]
         private static partial Regex BotRegex();
-        [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_]+\/?|www\.douyin\.com\/(?:video\/\d+|discover\?[^ \n]+)|www\.tiktok\.com\/(?:t\/[A-Za-z0-9]+\/?|@[A-Za-z0-9._]+\/video\/\d+))")]
+        [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_-]+\/?|b23\.tv\/[A-Za-z0-9_-]+\/?|www\.douyin\.com\/(?:video\/\d+|discover\?[^ \n]+)|www\.tiktok\.com\/(?:t\/[A-Za-z0-9]+\/?|@[A-Za-z0-9._-]+\/video\/\d+))")]
         private static partial Regex MatchUrlRegex();
     }
     public class TgBotClassRespose
