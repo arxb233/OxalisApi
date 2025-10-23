@@ -12,7 +12,7 @@ namespace OxalisApi.Controllers.TgBot
         public async Task<IApiOut> Create([ApiVal(Val.BodyJson)] TgBotClassRespose tb)
         {
             if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
-            if (tb is null || string.IsNullOrWhiteSpace(tb.Token) || string.IsNullOrWhiteSpace(tb.DownApiUrl)) { return ApiOut.Write("创建数据不能为空！"); }
+            if (tb is null || string.IsNullOrWhiteSpace(tb.TgBot.Token) || string.IsNullOrWhiteSpace(tb.DownApi.DownApiUrl)) { return ApiOut.Write("创建数据不能为空！"); }
             var TgBot = new TgBotClass(tb);
             _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");

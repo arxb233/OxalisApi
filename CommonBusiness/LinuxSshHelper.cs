@@ -72,7 +72,11 @@ namespace OxalisApi.CommonBusiness
             ms.Position = 0;
             return ms;
         }
-
+        
+        public bool fileExists(string localPath)
+        {
+             return sftp.Exists(localPath);
+        }
         /// <summary>
         /// 设置远程文件权限
         /// </summary>
