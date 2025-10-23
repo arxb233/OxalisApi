@@ -17,6 +17,10 @@ namespace OxalisApi.Controllers.TgBot
         {
             if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
             if (tb is null || Ext.IsEmptyJsonVar(tb.ToJson().JsonVar())) { return ApiOut.Write("创建数据不能有一条为空，请按照示例构造请求！"); }
+            if (tb.TgBot.ChatId != tb.TgBot.ChatVideoId && tb.TgBot.ChatId != tb.TgBot.ChatVideoGroupId && tb.TgBot.ChatVideoId != tb.TgBot.ChatVideoGroupId)
+            {
+                return ApiOut.Write("TG机器人三个群组ID不允许重复！");
+            }
             var TgBot = new TgBotClass(tb);
             _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");
