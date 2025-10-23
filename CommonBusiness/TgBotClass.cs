@@ -3,6 +3,7 @@ using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
+using Org.BouncyCastle.Utilities.Zlib;
 using Quartz.Util;
 using Renci.SshNet;
 using System.IO;
@@ -153,7 +154,9 @@ namespace OxalisApi.CommonBusiness
                     await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
                     Ext.DeleteFile(tb.TgBot.CacheFile);
                 }
-                catch { }
+                catch {
+                    await _bot.SendMessage(msg.Chat.Id,"缓存文件获取或删除失败！", ParseMode.None, msg);
+                }
             }
         }
         public async Task OnUpdate(Update update)
