@@ -1,4 +1,9 @@
-﻿using Tool;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.Text.Json;
+using Tool;
+using Tool.Utils;
+using Tool.Utils.Data;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OxalisApi.CommonBusiness
 {
@@ -39,6 +44,26 @@ namespace OxalisApi.CommonBusiness
             Error(exception, msg, args);
             return ValueTask.CompletedTask;
         }
-
+        public static bool IsEmptyJsonVar(JsonVar jsonvar)
+        {
+            foreach (JsonVar item in jsonvar)
+            {
+                switch (item.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                    case JsonValueKind.Array:
+                        if (item.IsNullOrEmpty()) { return true; }
+                        if (IsEmptyJsonVar(item)) { return true; }
+                        break;
+                    case JsonValueKind.Undefined:
+                    case JsonValueKind.Null:
+                        return true;
+                    default:
+                        if (item.ToString().IsNullOrEmpty()) { return true; }
+                        break;
+                }
+            }
+            return false;
+        }
     }
 }
