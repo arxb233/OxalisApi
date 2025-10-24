@@ -33,6 +33,7 @@ namespace OxalisApi.CommonBusiness
                 StringBuilder stringBuilder = new(); stringBuilder.AppendLine("我已收到消息:");
                 if (detail.IsNullOrEmpty()) { await _bot.SendMessage(msg.Chat.Id, $"消息内容不能为空！"); return; }
                 var StartMessage = await _bot.SendMessage(msg.Chat.Id, stringBuilder.ToString());
+                var EndMessage = StartMessage;
                 if (MatchUrlRegex().Match(detail) is Match MatchUrl && MatchUrl.Success)
                 {
                     try
@@ -54,8 +55,8 @@ namespace OxalisApi.CommonBusiness
                         #region Download
                         await SendProcess($"3.当前AutoDL实列可用GPU为{Check}个,满足运行条件！");
                         await SendProcess($"4.视频链接获取成功，正在下载视频，请耐心等待....");
-                        using var video = await VideoDownClass.DownLoad(tb.DownApi.DownApiUrl, MatchUrl.Value);
-                        if (video == Stream.Null || video.Length <= 333) { await SendProcess("视频获取失败！"); return; }
+                        using var video = await VideoDownClass.DownLoad(tb.DownApi.DownApiUrl, MatchUrl.Value,detail);
+                        if (video == Stream.Null || video.Length <= 333) { await SendProcess("视频获取失败！"); return; } 
                         #endregion
 
                         #region Power_on
@@ -114,14 +115,11 @@ namespace OxalisApi.CommonBusiness
                     return;
                 }
                 await SendProcess($"{detail}！");
-                async Task<Message> SendProcess(string text)
+                async Task SendProcess(string text)
                 {
-                    if (text.Contains("进度"))
-                    {
-                        return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, stringBuilder.ToString() + Environment.NewLine + text);
-                    }
-                    stringBuilder.AppendLine(text);
-                    return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, stringBuilder.ToString());
+                    string EditMessage = stringBuilder.ToString() + text;
+                    if (!text.Contains("进度")) { stringBuilder.AppendLine(text); EditMessage = stringBuilder.ToString(); }
+                    try { if (EndMessage.Text != EditMessage) { EndMessage = await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, EditMessage); } } catch { }
                 }
                 async Task OutPutMessage(LinuxSshHelper ssh)
                 {

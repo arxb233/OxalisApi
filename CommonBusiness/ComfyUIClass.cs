@@ -30,12 +30,13 @@ namespace OxalisApi.CommonBusiness
 
         public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, Func<string, Task> funcMsg)
         {
-            webClientAsync = new WebClientAsync() { IsThreadPool = false };
+            webClientAsync = new WebClientAsync();
             webClientAsync.SetReceived(Receive);
             this.ComfyUiUrl = ComfyUiUrl;
             this.client_id = client_id;
             PromptJsonVar = PromptJson.JsonVar();
             WaitDict = [];
+            WaitDict.Add("StartTime", new TimestampedClock(DateTime.Now.Microsecond));
             taskWithTimeout = new TaskWithTimeout(TimeSpan.FromHours(1));
             this.funcMsg = funcMsg;
         }
@@ -80,18 +81,16 @@ namespace OxalisApi.CommonBusiness
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
-                                var _StartTime = new TimestampedClock(StartTime);
-                                await funcMsg($"任务已开始,时间:{_StartTime.StartTime:yy-MM-dd HH:mm:ss}");
-                                WaitDict.Add("StartTime", _StartTime);
+                                var _StartTime = WaitDict["StartTime"] as TimestampedClock;
+                                await funcMsg($"任务已开始,时间:{_StartTime?.StartTime:yy-MM-dd HH:mm:ss}");
                             }
                             break;
                         case "progress_state":
                             if (Wsmsgutf.TryGet(out var progress_state, "data", "nodes"))
                             {
                                 double percent = PromptJsonVar.Count == 0 ? 0 : (double)progress_state.Count / PromptJsonVar.Count * 100;
-                                if (WaitDict.Count == 0) { WaitDict.Add("StartTime", new TimestampedClock(DateTime.Now.Microsecond)); }
-                                var Time = WaitDict["StartTime"] as TimestampedClock;
-                                await funcMsg($"进度:{percent:F2}%,耗时:{Time?.ElapsedTime:hh\\:mm\\:ss}");
+                                var _StartTime = WaitDict["StartTime"] as TimestampedClock;
+                                await funcMsg($"任务进度:{percent:F2}%,耗时:{_StartTime?.ElapsedTime:hh\\:mm\\:ss}");
                             }
                             break;
                         case "progress":
@@ -125,7 +124,7 @@ namespace OxalisApi.CommonBusiness
 
         public void Dispose()
         {
-            //webClientAsync.Dispose();
+            webClientAsync.Dispose();
             ((IDisposable)Task).Dispose();
             GC.SuppressFinalize(this);
         }

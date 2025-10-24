@@ -2,17 +2,24 @@
 using Microsoft.Extensions.FileSystemGlobbing;
 using Org.BouncyCastle.Utilities.Zlib;
 using OxalisApi.Job;
+using Quartz.Util;
 using System;
 using System.Diagnostics;
 using System.Text.Json;
 using Tool;
 using Tool.Utils;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OxalisApi.CommonBusiness
 {
     public class VideoDownClass()
     {
-        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl)
+        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl,string detail)
+        {
+            if (detail.StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl); }
+            return await DouyinDownLoad(DownApiUrl, MatchUrl);
+        }
+        public static async Task<Stream> DouyinDownLoad(string DownApiUrl, string MatchUrl)
         {
             string url = $"{DownApiUrl}/api/download?url={MatchUrl}&prefix=true&with_watermark=false";
             var video = await HttpClientClass.StreamAsync(url);
@@ -29,20 +36,24 @@ namespace OxalisApi.CommonBusiness
         }
         private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath)
         {
-            string jsonString = File.ReadAllText(jsonFilePath);
-            using JsonDocument doc = JsonDocument.Parse(jsonString);
-            JsonElement root = doc.RootElement;
-            JsonElement dash = root.GetProperty("data").GetProperty("data").GetProperty("dash");
-            string videoUrl = dash.GetProperty("video")[0].GetProperty("baseUrl").GetString();
-            string audioUrl = dash.GetProperty("audio")[0].GetProperty("baseUrl").GetString();
-            string videoPath = "video.m4s";
-            string audioPath = "audio.m4s";
-           // if(jsonFilePath.TryGet())
-            await DownloadFileAsync(videoUrl, videoPath);
-            await DownloadFileAsync(audioUrl, audioPath);
-            using Stream outputStream = await MergeFilesWithFFmpeg(videoPath, audioPath);
-            File.Delete(videoPath);
-            File.Delete(audioPath);
+            string videoPath = Path.Combine(Path.GetTempPath(), "video.m4s");
+            string audioPath = Path.Combine(Path.GetTempPath(), "audio.m4s");
+            if (jsonFilePath.TryGet(out var jsonFile, "data", "data", "dash"))
+            {
+                if (jsonFile.TryGet(out var video, "video"))
+                {
+                    var videoUrl = video.Select(x => x["baseUrl"].ToString()).FirstOrDefault();
+                    if (videoUrl is not null) { await DownloadFileAsync(videoUrl, videoPath); }
+                }
+                if (jsonFile.TryGet(out var audio, "audio"))
+                {
+                    var audioUrl = audio.Select(x => x["baseUrl"].ToString()).FirstOrDefault();
+                    if (audioUrl is not null) { await DownloadFileAsync(audioUrl, videoPath); }
+                }
+            }
+            string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 pipe:";
+            using Stream outputStream = await FFMpegWrapper.MergeFilesWithFFmpeg(arguments, @"D:\ffmpeg\bin\ffmpeg.exe", videoPath, audioPath);
+            File.Delete(videoPath); File.Delete(audioPath);
             return outputStream;
         }
         private static async Task DownloadFileAsync(string url, string outputPath)
@@ -54,52 +65,6 @@ namespace OxalisApi.CommonBusiness
             response.EnsureSuccessStatusCode();
             byte[] content = await response.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(outputPath, content);
-            Console.WriteLine($"下载完成: {outputPath}");
         }
-
-        private static async Task<Stream> MergeFilesWithFFmpeg(string videoPath, string audioPath)
-        {
-            string ffmpegPath = "ffmpeg";
-            string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 pipe:";
-            ProcessStartInfo processInfo = new()
-            {
-                FileName = ffmpegPath,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var process = new Process { StartInfo = processInfo };
-            using var outputStream = new MemoryStream();
-            process.OutputDataReceived += (sender, args) =>
-            {
-                if (args.Data != null)
-                {
-                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(args.Data);
-                    outputStream.Write(buffer, 0, buffer.Length);
-                }
-            };
-            try
-            {
-                process.Start();
-                process.BeginOutputReadLine();
-                string error = await process.StandardError.ReadToEndAsync();
-                await Task.Run(() => process.WaitForExit());
-                if (process.ExitCode != 0)
-                {
-                    throw new Exception($"FFmpeg 合并失败: {error}");
-                }
-                Console.WriteLine("FFmpeg 合并成功！");
-                outputStream.Position = 0;
-                return outputStream;
-            }
-            catch (Exception ex)
-            {
-                outputStream.Dispose();
-                throw new Exception($"FFmpeg 处理失败: {ex.Message}");
-            }
-        }
-
     }
 }
