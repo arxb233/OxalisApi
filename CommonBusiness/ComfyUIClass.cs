@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Xml;
 using Tool;
 using Tool.Sockets.Kernels;
@@ -143,8 +144,8 @@ namespace OxalisApi.CommonBusiness
         public async Task Websocket()
         {
             await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}&test=");
+            SpinWait.SpinUntil(() => webClientAsync.Connected);
         }
-
         public void Dispose()
         {
             webClientAsync.Dispose();
