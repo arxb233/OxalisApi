@@ -14,9 +14,9 @@ namespace OxalisApi.CommonBusiness
 {
     public class VideoDownClass()
     {
-        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl,string detail)
+        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl, string detail)
         {
-            if (detail.StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl); }
+            if (detail.Trim().StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl); }
             return await DouyinDownLoad(DownApiUrl, MatchUrl);
         }
         public static async Task<Stream> DouyinDownLoad(string DownApiUrl, string MatchUrl)
@@ -27,17 +27,26 @@ namespace OxalisApi.CommonBusiness
         }
         public static async Task<Stream> BilibiliDownLoad(string DownApiUrl, string MatchUrl)
         {
-            string Aidurl = $"{DownApiUrl}/api/bilibili/web/bv_to_aid?bv_id={MatchUrl}";
+            string Aidurl = $"{DownApiUrl}/api/bilibili/web/fetch_video_parts?bv_id={MatchUrl}";
             var AidResult = await HttpClientClass.GetAsync(Aidurl);
-            string Videourl = $"{DownApiUrl}/api/bilibili/web/fetch_video_playurl?bv_id={MatchUrl}&cid={AidResult}";
-            var VideoResult = await HttpClientClass.GetAsync(Aidurl);
-            var video = await BilibiliParse(VideoResult);
-            return video;
+            if (AidResult.TryGet(out var cid, "data", "data"))
+            {
+                var cidinfo = cid.Select(x => x["cid"].ToString()).FirstOrDefault();
+                if (cidinfo is not null)
+                {
+                    string Videourl = $"{DownApiUrl}/api/bilibili/web/fetch_video_playurl?bv_id={MatchUrl}&cid={cidinfo}";
+                    var VideoResult = await HttpClientClass.GetAsync(Videourl);
+                    var video = await BilibiliParse(VideoResult);
+                    return video;
+                }
+            }
+            return Stream.Null;
         }
         private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath)
         {
             string videoPath = Path.Combine(Path.GetTempPath(), "video.m4s");
             string audioPath = Path.Combine(Path.GetTempPath(), "audio.m4s");
+            string outputPath = Path.Combine(Path.GetTempPath(), "output.mp4");
             if (jsonFilePath.TryGet(out var jsonFile, "data", "data", "dash"))
             {
                 if (jsonFile.TryGet(out var video, "video"))
@@ -48,12 +57,13 @@ namespace OxalisApi.CommonBusiness
                 if (jsonFile.TryGet(out var audio, "audio"))
                 {
                     var audioUrl = audio.Select(x => x["baseUrl"].ToString()).FirstOrDefault();
-                    if (audioUrl is not null) { await DownloadFileAsync(audioUrl, videoPath); }
+                    if (audioUrl is not null) { await DownloadFileAsync(audioUrl, audioPath); }
                 }
             }
-            string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 pipe:";
-            using Stream outputStream = await FFMpegWrapper.MergeFilesWithFFmpeg(arguments, @"D:\ffmpeg\bin\ffmpeg.exe", videoPath, audioPath);
-            File.Delete(videoPath); File.Delete(audioPath);
+            string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 -y \"{outputPath}\"";
+            await FFMpegWrapper.MergeFilesWithFFmpeg(arguments, @"E:\ffmpeg\bin\ffmpeg.exe", videoPath, audioPath);
+            using Stream outputStream =  FileClass.ReadLocalFileAsStream(outputPath);
+            //File.Delete(videoPath); File.Delete(audioPath); File.Delete(outputPath);
             return outputStream;
         }
         private static async Task DownloadFileAsync(string url, string outputPath)

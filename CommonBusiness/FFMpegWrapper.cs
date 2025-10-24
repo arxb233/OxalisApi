@@ -18,7 +18,7 @@ namespace OxalisApi.CommonBusiness
             ffmpegProcess.Start();
             ffmpegProcess.WaitForExit();
         }
-        public static async Task<Stream> MergeFilesWithFFmpeg(string arguments,string ffmpegPath, string videoPath, string audioPath)
+        public static async Task MergeFilesWithFFmpeg(string arguments,string ffmpegPath, string videoPath, string audioPath)
         {
             ProcessStartInfo processInfo = new()
             {
@@ -30,17 +30,7 @@ namespace OxalisApi.CommonBusiness
                 CreateNoWindow = true
             };
             using var process = new Process { StartInfo = processInfo };
-            using var outputStream = new MemoryStream();
-            process.OutputDataReceived += (sender, args) =>
-            {
-                if (args.Data != null)
-                {
-                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(args.Data);
-                    outputStream.Write(buffer, 0, buffer.Length);
-                }
-            };
             await FFMpegCommand(process);
-            return outputStream;
         }
         public static async Task FFMpegCommand(Process process)
         {
@@ -50,6 +40,7 @@ namespace OxalisApi.CommonBusiness
                 process.BeginOutputReadLine();
                 string error = await process.StandardError.ReadToEndAsync();
                 await Task.Run(() => process.WaitForExit());
+                process.Dispose();
                 if (process.ExitCode != 0) { Ext.Info($"FFmpeg执行失败: {error}"); }
                 Ext.Info("FFmpeg执行成功！");
             }
