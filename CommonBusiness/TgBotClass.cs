@@ -125,7 +125,7 @@ namespace OxalisApi.CommonBusiness
                     catch (Exception ex)
                     {
                         await AutoDLClose();
-                        await SendProcess($"❌ 操作失败,已关闭实例: {ex.Message}");
+                        await SendProcess($"❌ 操作失败: {ex.Message}");
                     }
                     return;
                 }
@@ -140,7 +140,7 @@ namespace OxalisApi.CommonBusiness
                     await SendProcess($"11.工作流执行完成,正在下载生成的视频....");
                     using var AIvideo = ssh.DownloadStream(tb.ComfyUI.OutputPath[0]);
                     if (AIvideo == Stream.Null || AIvideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
-                    await Ext.DownloadFileAsStreamAsync(AIvideo, tb.TgBot.CacheFile);
+                    await Ext.DownloadFileAsStreamAsync(AIvideo, Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile));
                     using var InputVideo = ssh.DownloadStream(tb.ComfyUI.InputPath);
                     if (InputVideo == Stream.Null || InputVideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
                     await _bot.SendVideo(tb.TgBot.ChatVideoId, InputVideo, msg.Text);
@@ -152,15 +152,17 @@ namespace OxalisApi.CommonBusiness
                 {
                     var Close = await AutoDLClass.Close(tb.AutoDL.Authorization, tb.AutoDL.Instance_uuid);
                     if (!Close) { await SendProcess($"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
+                    await SendProcess($"13.实列已关闭！");
                 }
             }
             if (msg.Caption != null && msg.Chat.Id == tb.TgBot.ChatVideoGroupId && BotRegex().Match(msg.Caption) is Match MatchBotGroup && MatchBotGroup.Success)
             {
                 try
                 {
-                    using var _outputStream = Ext.ReadLocalFileAsStream(tb.TgBot.CacheFile);
+                    string tempPath = Path.Combine(Path.GetTempPath(),tb.TgBot.CacheFile);
+                    using var _outputStream = Ext.ReadLocalFileAsStream(tempPath);
                     await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
-                    Ext.DeleteFile(tb.TgBot.CacheFile);
+                    Ext.DeleteFile(tempPath);
                 }
                 catch
                 {
@@ -207,7 +209,7 @@ namespace OxalisApi.CommonBusiness
         public long ChatVideoId { get; set; }
         public long ChatVideoGroupId { get; set; }
         public required string CacheFile { get; set; }
-    }
+}
     public class DownApiInfo
     {
         public required string DownApiUrl { get; set; }

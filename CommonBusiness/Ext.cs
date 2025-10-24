@@ -44,9 +44,9 @@ namespace OxalisApi.CommonBusiness
             Error(exception, msg, args);
             return ValueTask.CompletedTask;
         }
-        public static async Task DownloadFileAsStreamAsync(Stream Stream, string localFilePath)
+        public static async Task DownloadFileAsStreamAsync(Stream Stream,string tempPath)
         {
-            using FileStream localFileStream = new(localFilePath, FileMode.Create, FileAccess.Write);
+            using FileStream localFileStream = new(tempPath, FileMode.Create, FileAccess.Write);
             await Stream.CopyToAsync(localFileStream);
         }
         public static Stream ReadLocalFileAsStream(string filePath)
