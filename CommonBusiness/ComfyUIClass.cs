@@ -9,7 +9,9 @@ using Tool;
 using Tool.Sockets.Kernels;
 using Tool.Sockets.WebHelper;
 using Tool.Utils;
+using Tool.Utils.Data;
 using Tool.Utils.TaskHelper;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OxalisApi.CommonBusiness
 {
@@ -28,12 +30,11 @@ namespace OxalisApi.CommonBusiness
 
         public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, Func<string, Task> funcMsg)
         {
-            webClientAsync = new WebClientAsync();
+            webClientAsync = new WebClientAsync() { IsThreadPool = false };
             webClientAsync.SetReceived(Receive);
             this.ComfyUiUrl = ComfyUiUrl;
             this.client_id = client_id;
             PromptJsonVar = PromptJson.JsonVar();
-
             WaitDict = [];
             taskWithTimeout = new TaskWithTimeout(TimeSpan.FromHours(1));
             this.funcMsg = funcMsg;
@@ -43,26 +44,26 @@ namespace OxalisApi.CommonBusiness
         {
             try
             {
-                var response = await PostAsync($"http://{ComfyUiUrl}/prompt", new { client_id, prompt = PromptJsonVar.Data });
+                var response = await HttpClientClass.PostAsync($"http://{ComfyUiUrl}/prompt", new { client_id, prompt = PromptJsonVar.Data });
                 if (response.TryGet(out var message, "error", "message")) { return (false, message); }
                 return (true, "任务运行成功！");
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return (false, ex.Message);
             }
         }
-        public async Task<(bool,int)> GetPrompt()
+        public async Task<(bool, int)> GetPrompt()
         {
             try
             {
-                var response = await GetAsync($"http://{ComfyUiUrl}/prompt");
+                var response = await HttpClientClass.GetAsync($"http://{ComfyUiUrl}/prompt");
                 if (response.TryGet(out var message, "exec_info", "queue_remaining")) { return (true, message); }
                 return (false, -1);
             }
             catch
             {
-                return (false,-1);
+                return (false, -1);
             }
         }
 
@@ -70,7 +71,7 @@ namespace OxalisApi.CommonBusiness
         {
             using (wsmsg)
             {
-                var Wsmsgutf = Encoding.UTF8.GetString(wsmsg.Span).JsonVar();
+                var Wsmsgutf = wsmsg.GetString().JsonVar();
                 if (Wsmsgutf.TryGet(out var Type, "type"))
                 {
                     switch (Type.ToString())
@@ -79,23 +80,35 @@ namespace OxalisApi.CommonBusiness
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
-                                var _StartTime = DateTimeExtension.ToLocalTime(StartTime, true);
-                                await funcMsg($"任务已开始,时间:{_StartTime:yy-MM-dd HH:mm:ss}");
+                                var _StartTime = new TimestampedClock(StartTime);
+                                await funcMsg($"任务已开始,时间:{_StartTime.StartTime:yy-MM-dd HH:mm:ss}");
                                 WaitDict.Add("StartTime", _StartTime);
                             }
                             break;
                         case "progress_state":
-                            if (Wsmsgutf.TryGet(out var Data, "data", "nodes"))
+                            if (Wsmsgutf.TryGet(out var progress_state, "data", "nodes"))
                             {
-                                double percent = PromptJsonVar.Count == 0 ? 0 : (double)Data.Count / PromptJsonVar.Count * 100;
-                                await funcMsg($"任务完成百分比: {percent:F2}%,当前耗时{(DateTime.Now - (DateTime)WaitDict["StartTime"]):HH:mm;ss}");
+                                double percent = PromptJsonVar.Count == 0 ? 0 : (double)progress_state.Count / PromptJsonVar.Count * 100;
+                                if (WaitDict.Count == 0) { WaitDict.Add("StartTime", new TimestampedClock(DateTime.Now.Microsecond)); }
+                                var Time = WaitDict["StartTime"] as TimestampedClock;
+                                await funcMsg($"进度:{percent:F2}%,耗时:{Time?.ElapsedTime:hh\\:mm\\:ss}");
+                            }
+                            break;
+                        case "progress":
+                            if (Wsmsgutf.TryGet(out var progress, "data"))
+                            {
+                                if (progress.TryGet(out var value, "value") && progress.TryGet(out var max, "max")
+                                    && progress.TryGet(out var node, "node") && PromptJsonVar.TryGet(out var NodeTitle, node.ToString(), "_meta", "title"))
+                                {
+                                    await funcMsg($"{NodeTitle}-进度:#{value}-#{max}");
+                                }
                             }
                             break;
                         case "execution_success":
                             if (Wsmsgutf.TryGet(out var FinishTime, "data", "timestamp"))
                             {
-                                var _FinishTime = DateTimeExtension.ToLocalTime(FinishTime, true);
-                                await funcMsg($"任务已完成,时间:{_FinishTime:yy-MM-dd HH:mm:ss},当前耗时{(_FinishTime - (DateTime)WaitDict["StartTime"]):HH:mm;ss}");
+                                var Time = WaitDict["StartTime"] as TimestampedClock;
+                                await funcMsg($"任务已完成,时间:{Time?.Now:yy-MM-dd HH:mm:ss},当前耗时{Time?.ElapsedTime:HH:mm:ss}");
                             }
                             taskWithTimeout.SetResult();
                             break;
@@ -108,24 +121,6 @@ namespace OxalisApi.CommonBusiness
         public async Task Websocket()
         {
             await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}&test=");
-        }
-        private static async Task<JsonVar> GetAsync(string url)
-        {
-            return await SendAsync(HttpMethod.Get, url,"");
-        }
-        private static async Task<JsonVar> PostAsync(string url, object json)
-        {
-            return await SendAsync(HttpMethod.Post, url, json);
-        }
-        private static async Task<JsonVar> SendAsync(HttpMethod HttpMethod, string url, object json)
-        {
-            using var request = HttpHelpers.CreateHttpRequestMessage(HttpMethod, url);
-            if (HttpMethod == HttpMethod.Post) { request.Content = new StringContent(json.ToJson(), new MediaTypeHeaderValue("application/json")); }
-            using var response = await HttpHelpers.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-            var body = await response.Content.ReadAsStringAsync();
-            var jsons = body.JsonVar();
-            return jsons;
         }
 
         public void Dispose()

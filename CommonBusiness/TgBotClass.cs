@@ -1,28 +1,11 @@
-﻿using Azure;
-using Microsoft.Extensions.FileSystemGlobbing.Internal;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Identity.Client;
-using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.Utilities.Zlib;
-using Quartz.Util;
-using Renci.SshNet;
-using System.IO;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.WebSockets;
-using System.Runtime.InteropServices;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
 using Tool;
-using Tool.Sockets.Kernels;
-using Tool.Utils;
-using Tool.Utils.TaskHelper;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace OxalisApi.CommonBusiness
 {
@@ -106,16 +89,17 @@ namespace OxalisApi.CommonBusiness
 
                         #region Prompt
                         await SendProcess($"10.工作流执行成功,正在获取工作流执行状态....");
-                        do
-                        {
-                            if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1)
-                            {
-                                if (GetPromptResult.Item2 == 0) { break; }
-                                if (GetPromptResult.Item2 == -1) { await SendProcess("工作流执行失败！"); await AutoDLClose(); return; }
-                            }
-                            await SendProcess($"当前剩余任务列队的数量{GetPromptResult.Item2},1分钟后重新获取");
-                            await Task.Delay(TimeSpan.FromMinutes(1));
-                        } while (true);//await comfyUIClass.Websocket();//await comfyUIClass.Task;
+                        //do
+                        //{
+                        //    if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1)
+                        //    {
+                        //        if (GetPromptResult.Item2 == 0) { break; }
+                        //        if (GetPromptResult.Item2 == -1) { await SendProcess("工作流执行失败！"); await AutoDLClose(); return; }
+                        //    }
+                        //    await SendProcess($"当前剩余任务列队的数量{GetPromptResult.Item2},1分钟后重新获取");
+                        //    await Task.Delay(TimeSpan.FromMinutes(1));
+                        //} while (true);
+                        await comfyUIClass.Websocket(); await comfyUIClass.Task;
                         #endregion
 
                         #region OutPut
@@ -132,6 +116,10 @@ namespace OxalisApi.CommonBusiness
                 await SendProcess($"{detail}！");
                 async Task<Message> SendProcess(string text)
                 {
+                    if (text.Contains("进度"))
+                    {
+                        return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, stringBuilder.ToString() + Environment.NewLine + text);
+                    }
                     stringBuilder.AppendLine(text);
                     return await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, stringBuilder.ToString());
                 }
@@ -140,7 +128,7 @@ namespace OxalisApi.CommonBusiness
                     await SendProcess($"11.工作流执行完成,正在下载生成的视频....");
                     using var AIvideo = ssh.DownloadStream(tb.ComfyUI.OutputPath[0]);
                     if (AIvideo == Stream.Null || AIvideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
-                    await Ext.DownloadFileAsStreamAsync(AIvideo, Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile));
+                    await FileClass.DownloadFileAsStreamAsync(AIvideo, Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile));
                     using var InputVideo = ssh.DownloadStream(tb.ComfyUI.InputPath);
                     if (InputVideo == Stream.Null || InputVideo.Length == 0) { await SendProcess("视频获取失败！"); await AutoDLClose(); return; }
                     await _bot.SendVideo(tb.TgBot.ChatVideoId, InputVideo, msg.Text);
@@ -159,10 +147,10 @@ namespace OxalisApi.CommonBusiness
             {
                 try
                 {
-                    string tempPath = Path.Combine(Path.GetTempPath(),tb.TgBot.CacheFile);
-                    using var _outputStream = Ext.ReadLocalFileAsStream(tempPath);
+                    string tempPath = Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile);
+                    using var _outputStream = FileClass.ReadLocalFileAsStream(tempPath);
                     await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
-                    Ext.DeleteFile(tempPath);
+                    FileClass.DeleteFile(tempPath);
                 }
                 catch
                 {
@@ -209,7 +197,7 @@ namespace OxalisApi.CommonBusiness
         public long ChatVideoId { get; set; }
         public long ChatVideoGroupId { get; set; }
         public required string CacheFile { get; set; }
-}
+    }
     public class DownApiInfo
     {
         public required string DownApiUrl { get; set; }
