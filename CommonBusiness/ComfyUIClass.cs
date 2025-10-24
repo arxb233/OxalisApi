@@ -27,17 +27,19 @@ namespace OxalisApi.CommonBusiness
         private readonly string client_id;
         private readonly JsonVar PromptJsonVar;
         private readonly KeepAlive _keep;
+        private readonly int _hour;
 
         public Task Task => taskWithTimeout.Task;
 
-        public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, Func<string?, Task> funcMsg)
+        public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, int hour, Func<string?, Task> funcMsg)
         {
             _keep = new KeepAlive(1, Keep);
             webClientAsync = new WebClientAsync(NetBufferSize.Default, true);
             webClientAsync.SetReceived(Receive);
-            webClientAsync.SetCompleted(async(a, b, c) =>
+            webClientAsync.SetCompleted(async (a, b, c) =>
             {
-                if (b == EnClient.Close) {
+                if (b == EnClient.Close)
+                {
                     var prompt = await GetPrompt();
                     if (prompt.Item2 == 0) { taskWithTimeout?.TrySetResult(); }
                 }
@@ -50,8 +52,9 @@ namespace OxalisApi.CommonBusiness
             this.client_id = client_id;
             PromptJsonVar = PromptJson.JsonVar();
             WaitDict = [];
-            taskWithTimeout = new TaskWithTimeout(TimeSpan.FromHours(1));
+            taskWithTimeout = new TaskWithTimeout(TimeSpan.FromHours(hour));
             this.funcMsg = funcMsg;
+            _hour = hour;
         }
         private async Task Keep()
         {
@@ -144,7 +147,10 @@ namespace OxalisApi.CommonBusiness
         public async Task Websocket()
         {
             await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}&test=");
-            SpinWait.SpinUntil(() => webClientAsync.Connected);
+            if (!SpinWait.SpinUntil(() => webClientAsync.Connected, TimeSpan.FromHours(_hour)))
+            {
+                throw new Exception("任务连接等待超时");
+            }
         }
         public void Dispose()
         {

@@ -83,7 +83,7 @@ namespace OxalisApi.CommonBusiness
 
                         #region ComfyUI
                         await SendProcess($"9.工作流获取成功,正在启动服务....");
-                        ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(), (_msg) => SendProcess(_msg));
+                        ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(),tb.ComfyUI.WaitHour, (_msg) => SendProcess(_msg));
                         //do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(TimeSpan.FromSeconds(10)); } while (true);
                         await SendProcess($"10.启动服务成功,正在执行并获取工作流状态....");
                         await comfyUIClass.Websocket();
@@ -210,5 +210,6 @@ namespace OxalisApi.CommonBusiness
         public required string[] OutputPath { get; set; }
         public uint Port { get; set; }
         public required string Prompt { get; set; }
+        public int WaitHour { get; set; }
     }
 }
