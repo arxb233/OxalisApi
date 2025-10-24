@@ -19,28 +19,46 @@ namespace OxalisApi.CommonBusiness
     {
         private readonly WebClientAsync webClientAsync;
         private readonly TaskWithTimeout taskWithTimeout;
-        private readonly Dictionary<string, object> WaitDict;
-        private readonly Func<string, Task> funcMsg;
+        private readonly LazyConcurrentDictionary<string, object> WaitDict;
+        private readonly Func<string?, Task> funcMsg;
 
         private readonly string ComfyUiUrl;
         private readonly string client_id;
         private readonly JsonVar PromptJsonVar;
+        private readonly KeepAlive _keep;
 
         public Task Task => taskWithTimeout.Task;
 
-        public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, Func<string, Task> funcMsg)
+        public ComfyUIClass(string ComfyUiUrl, string client_id, string PromptJson, Func<string?, Task> funcMsg)
         {
-            webClientAsync = new WebClientAsync();
+            _keep = new KeepAlive(1, Keep);
+            webClientAsync = new WebClientAsync(NetBufferSize.Default, true);
             webClientAsync.SetReceived(Receive);
+            webClientAsync.SetCompleted(async(a, b, c) =>
+            {
+                if (b == EnClient.Close) {
+                    var prompt = await GetPrompt();
+                    if (prompt.Item2 == 0) { taskWithTimeout?.TrySetResult(); }
+                }
+                if (b == EnClient.Reconnect)
+                {
+                    Ext.Info("websocket已重连");
+                }
+            });
             this.ComfyUiUrl = ComfyUiUrl;
             this.client_id = client_id;
             PromptJsonVar = PromptJson.JsonVar();
             WaitDict = [];
-            WaitDict.Add("StartTime", new TimestampedClock(DateTime.Now.Microsecond));
             taskWithTimeout = new TaskWithTimeout(TimeSpan.FromHours(1));
             this.funcMsg = funcMsg;
         }
-
+        private async Task Keep()
+        {
+            if (WaitDict.TryGetValue("Message", out var dictKeep))
+            {
+                await funcMsg(dictKeep.ToString());
+            }
+        }
         public async Task<(bool, string)> Prompt()
         {
             try
@@ -70,7 +88,7 @@ namespace OxalisApi.CommonBusiness
 
         private async ValueTask Receive(ReceiveBytes<WebSocket> wsmsg)
         {
-            using (wsmsg)
+            await using (wsmsg)
             {
                 var Wsmsgutf = wsmsg.GetString().JsonVar();
                 if (Wsmsgutf.TryGet(out var Type, "type"))
@@ -81,16 +99,14 @@ namespace OxalisApi.CommonBusiness
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
-                                var _StartTime = WaitDict["StartTime"] as TimestampedClock;
-                                await funcMsg($"任务已开始,时间:{_StartTime?.StartTime:yy-MM-dd HH:mm:ss}");
+                                WaitDict.GetOrAdd("Message", $"任务已开始,时间:{CreateTime(StartTime)?.StartTime:yy-MM-dd HH:mm:ss}");
                             }
                             break;
                         case "progress_state":
                             if (Wsmsgutf.TryGet(out var progress_state, "data", "nodes"))
                             {
                                 double percent = PromptJsonVar.Count == 0 ? 0 : (double)progress_state.Count / PromptJsonVar.Count * 100;
-                                var _StartTime = WaitDict["StartTime"] as TimestampedClock;
-                                await funcMsg($"任务进度:{percent:F2}%,耗时:{_StartTime?.ElapsedTime:hh\\:mm\\:ss}");
+                                WaitDict["Message"] = $"任务进度:{percent:F2}%,耗时:{CreateTime()?.ElapsedTime:hh\\:mm\\:ss}";
                             }
                             break;
                         case "progress":
@@ -99,23 +115,30 @@ namespace OxalisApi.CommonBusiness
                                 if (progress.TryGet(out var value, "value") && progress.TryGet(out var max, "max")
                                     && progress.TryGet(out var node, "node") && PromptJsonVar.TryGet(out var NodeTitle, node.ToString(), "_meta", "title"))
                                 {
-                                    await funcMsg($"{NodeTitle}-进度:#{value}-#{max}");
+                                    WaitDict["Message"] = $"{NodeTitle}-进度:#{value}-#{max}";
                                 }
                             }
                             break;
                         case "execution_success":
-                            if (Wsmsgutf.TryGet(out var FinishTime, "data", "timestamp"))
+                            if (Wsmsgutf.TryGet(out _, "data", "timestamp"))
                             {
-                                var Time = WaitDict["StartTime"] as TimestampedClock;
-                                await funcMsg($"任务已完成,时间:{Time?.Now:yy-MM-dd HH:mm:ss},当前耗时{Time?.ElapsedTime:HH:mm:ss}");
+                                var Time = CreateTime();
+                                WaitDict["Message"] = $"任务已完成,时间:{Time?.Now:yy-MM-dd HH:mm:ss},当前耗时{Time?.ElapsedTime:HH:mm:ss}";
                             }
-                            taskWithTimeout.SetResult();
+                            taskWithTimeout.TrySetResult();
                             break;
                         default:
                             break;
                     }
                 }
             }
+        }
+        private TimestampedClock CreateTime(long time = 0)
+        {
+            return WaitDict.GetOrAdd("StartTime", () =>
+             {
+                 return new TimestampedClock(time is 0 ? DateTime.Now.Microsecond : time);
+             }).ToVar<TimestampedClock>();
         }
         public async Task Websocket()
         {
@@ -125,6 +148,7 @@ namespace OxalisApi.CommonBusiness
         public void Dispose()
         {
             webClientAsync.Dispose();
+            _keep.Close();
             ((IDisposable)Task).Dispose();
             GC.SuppressFinalize(this);
         }

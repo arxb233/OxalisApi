@@ -55,8 +55,8 @@ namespace OxalisApi.CommonBusiness
                         #region Download
                         await SendProcess($"3.当前AutoDL实列可用GPU为{Check}个,满足运行条件！");
                         await SendProcess($"4.视频链接获取成功，正在下载视频，请耐心等待....");
-                        using var video = await VideoDownClass.DownLoad(tb.DownApi.DownApiUrl, MatchUrl.Value,detail);
-                        if (video == Stream.Null || video.Length <= 333) { await SendProcess("视频获取失败！"); return; } 
+                        using var video = await VideoDownClass.DownLoad(tb.DownApi.DownApiUrl, MatchUrl.Value, detail);
+                        if (video == Stream.Null || video.Length <= 333) { await SendProcess("视频获取失败！"); return; }
                         #endregion
 
                         #region Power_on
@@ -82,25 +82,16 @@ namespace OxalisApi.CommonBusiness
                         #endregion
 
                         #region ComfyUI
-                        await SendProcess($"9.工作流获取成功,正在启动服务并执行工作流....");
+                        await SendProcess($"9.工作流获取成功,正在启动服务....");
                         ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(), (_msg) => SendProcess(_msg));
-                        do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(TimeSpan.FromSeconds(10)); } while (true);
+                        //do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(TimeSpan.FromSeconds(10)); } while (true);
+                        await SendProcess($"10.启动服务成功,正在执行并获取工作流状态....");
+                        await comfyUIClass.Websocket();
                         if (await comfyUIClass.Prompt() is (bool, string) PromptResult && !PromptResult.Item1) { await SendProcess(PromptResult.Item2); await AutoDLClose(); return; }
                         #endregion
 
                         #region Prompt
-                        await SendProcess($"10.工作流执行成功,正在获取工作流执行状态....");
-                        //do
-                        //{
-                        //    if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1)
-                        //    {
-                        //        if (GetPromptResult.Item2 == 0) { break; }
-                        //        if (GetPromptResult.Item2 == -1) { await SendProcess("工作流执行失败！"); await AutoDLClose(); return; }
-                        //    }
-                        //    await SendProcess($"当前剩余任务列队的数量{GetPromptResult.Item2},1分钟后重新获取");
-                        //    await Task.Delay(TimeSpan.FromMinutes(1));
-                        //} while (true);
-                        await comfyUIClass.Websocket(); await comfyUIClass.Task;
+                        await comfyUIClass.Task;
                         #endregion
 
                         #region OutPut
@@ -115,11 +106,14 @@ namespace OxalisApi.CommonBusiness
                     return;
                 }
                 await SendProcess($"{detail}！");
-                async Task SendProcess(string text)
+                async Task SendProcess(string? text)
                 {
-                    string EditMessage = stringBuilder.ToString() + text;
-                    if (!text.Contains("进度")) { stringBuilder.AppendLine(text); EditMessage = stringBuilder.ToString(); }
-                    try { if (EndMessage.Text != EditMessage) { EndMessage = await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, EditMessage); } } catch { }
+                    if (text is not null)
+                    {
+                        string EditMessage = stringBuilder.ToString() + text;
+                        if (!text.Contains("进度")) { stringBuilder.AppendLine(text); EditMessage = stringBuilder.ToString(); }
+                        try { if (EndMessage.Text != EditMessage) { EndMessage = await _bot.EditMessageText(msg.Chat.Id, StartMessage.Id, EditMessage); } } catch { }
+                    }
                 }
                 async Task OutPutMessage(LinuxSshHelper ssh)
                 {
