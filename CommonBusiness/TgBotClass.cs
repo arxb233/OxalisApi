@@ -83,7 +83,7 @@ namespace OxalisApi.CommonBusiness
 
                         #region ComfyUI
                         await SendProcess($"9.工作流获取成功,正在启动服务....");
-                        ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(),tb.ComfyUI.WaitHour, (_msg) => SendProcess(_msg));
+                        ComfyUIClass comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(), tb.ComfyUI.WaitHour, (_msg) => SendProcess(_msg));
                         //do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(TimeSpan.FromSeconds(10)); } while (true);
                         await SendProcess($"10.启动服务成功,正在执行并获取工作流状态....");
                         await comfyUIClass.Websocket();
@@ -172,7 +172,7 @@ namespace OxalisApi.CommonBusiness
         }
         [GeneratedRegex(@"@[A-Za-z0-9_]+_bot\b")]
         private static partial Regex BotRegex();
-        [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_-]+\/?|b23\.tv\/[A-Za-z0-9_-]+\/?|www\.douyin\.com\/(?:video\/\d+|discover\?[^ \n]+)|www\.tiktok\.com\/(?:t\/[A-Za-z0-9]+\/?|@[A-Za-z0-9._-]+\/video\/\d+))")]
+        [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_-]+\/?)|BV[A-Za-z0-9]+")]
         private static partial Regex MatchUrlRegex();
     }
     public class TgBotClassRespose
