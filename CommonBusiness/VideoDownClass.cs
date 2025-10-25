@@ -85,10 +85,10 @@ namespace OxalisApi.CommonBusiness
         }
         public static async Task SpiltVideo(VideoInfo VideoInfo)
         {
-            string FFprobeArguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{VideoInfo.VideoPath}\"";
+            string FFprobeArguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{VideoInfo.OutputPath}\"";
             using var FFprobeProcess = FFMpegWrapper.ProcessCreate(FFprobeArguments, VideoInfo.FFprobePath);
             double duration = Convert.ToDouble(await FFMpegWrapper.FFProbeCommand(FFprobeProcess));
-            double startTime = duration > 15 ? (duration - 13) / 2 : 0;
+            double startTime = duration > 15 ? (int)((duration - 13) / 2) : 0;
             double Time = duration > 15 ? 13 : duration;
             string arguments = $"-i \"{VideoInfo.OutputPath}\" -ss {startTime} -t {Time} -c:v copy -c:a copy -f mp4 -y \"{VideoInfo.OutputSplitPath}\"";
             using var Process = FFMpegWrapper.ProcessCreate(arguments, VideoInfo.FFmpegPath);

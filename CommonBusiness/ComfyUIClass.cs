@@ -2,6 +2,7 @@
 using Quartz.Util;
 using System.Net.Http.Headers;
 using System.Net.WebSockets;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -58,15 +59,9 @@ namespace OxalisApi.CommonBusiness
         }
         private async Task Keep()
         {
-            string? message = string.Empty;
-            if (WaitDict.TryGetValue("MessageTitle", out var dictTitleKeep))
+            if (WaitDict.TryGetValue("MessageTitle", out var dictTitleKeep) && WaitDict.TryGetValue("Message", out var dictKeep))
             {
-                message = dictTitleKeep.ToString();
-            }
-            if (WaitDict.TryGetValue("Message", out var dictKeep))
-            {
-                message += Environment.NewLine + dictKeep.ToString();
-                await funcMsg(message);
+                await funcMsg(dictTitleKeep.ToString() + Environment.NewLine + dictKeep.ToString());
             }
         }
         public async Task<(bool, string)> Prompt()
@@ -110,7 +105,7 @@ namespace OxalisApi.CommonBusiness
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
-                                WaitDict.GetOrAdd("MessageTitle", $"任务已开始,时间:{CreateTime(StartTime)?.StartTime:yy-MM-dd HH:mm:ss}");
+                                WaitDict["MessageTitle"] = $"任务已开始,时间:{CreateTime(StartTime)?.StartTime:yy-MM-dd HH:mm:ss}";
                             }
                             break;
                         case "progress_state":
@@ -126,19 +121,10 @@ namespace OxalisApi.CommonBusiness
                                 if (progress.TryGet(out var value, "value") && progress.TryGet(out var max, "max")
                                     && progress.TryGet(out var node, "node") && PromptJsonVar.TryGet(out var NodeTitle, node.ToString(), "_meta", "title"))
                                 {
-                                    WaitDict["Message"] = $"{NodeTitle}#{WaitDict[node]}-进度:#{value}-#{max}";
-                                    if (value.ToString() == max.ToString())
-                                    {
-                                        foreach (var (index, item) in PromptJsonVar.Index())
-                                        {
-                                            if (item.Key == node)
-                                            {
-                                                double percent = PromptJsonVar.Count == 0 ? 0 : index / PromptJsonVar.Count * 100;
-                                                WaitDict["MessageTitle"] = $"任务进度:{percent:F2}%,耗时:{CreateTime()?.ElapsedTime:hh\\:mm\\:ss}";
-                                            }
-                                        }
-                                        WaitDict[node] = Convert.ToInt32(WaitDict[node].ToString()) + 1;
-                                    }
+                                    var info = 1;
+                                    if (WaitDict.TryGetValue(node.ToString(), out var dict)) { info = Convert.ToInt32(dict.ToString()); }
+                                    WaitDict["Message"] = $"{NodeTitle}#{info}-进度:#{value}-#{max}";
+                                    if (value.ToString() == max.ToString()) { WaitDict[node.ToString()] = info + 1; }
                                 }
                             }
                             break;
@@ -146,8 +132,7 @@ namespace OxalisApi.CommonBusiness
                         case "execution_success":
                             if (Wsmsgutf.TryGet(out _, "data", "timestamp"))
                             {
-                                var Time = CreateTime();
-                                WaitDict["Message"] = $"任务已完成,时间:{Time?.Now:yy-MM-dd HH:mm:ss},当前耗时{Time?.ElapsedTime:HH:mm:ss}";
+                                WaitDict["Message"] = $"任务已完成,时间:{CreateTime()?.Now:yy-MM-dd HH:mm:ss},当前耗时{CreateTime()?.ElapsedTime:HH:mm:ss}";
                             }
                             taskWithTimeout.TrySetResult();
                             break;
@@ -160,10 +145,10 @@ namespace OxalisApi.CommonBusiness
         }
         private TimestampedClock CreateTime(long time = 0)
         {
-            return WaitDict.GetOrAdd("StartTime", () =>
-             {
-                 return new TimestampedClock(time is 0 ? DateTime.Now.Microsecond : time);
-             }).ToVar<TimestampedClock>();
+            if (WaitDict.TryGetValue("StartTime", out var StartTime) && StartTime is TimestampedClock StartTimeclock) { return StartTimeclock; }
+            var NewTime = new TimestampedClock(time is 0 ? DateTime.Now.Microsecond : time);
+            WaitDict["StartTime"] = NewTime;
+            return NewTime;
         }
         public async Task Websocket()
         {
