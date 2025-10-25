@@ -30,7 +30,7 @@ namespace OxalisApi.Controllers.TgBot
             }
             var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
             var Trojanclient = new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
-            var TgBot = new TgBotClass(tb, Trojanclient);
+            using var TgBot = new TgBotClass(tb, Trojanclient);
             _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");
         }

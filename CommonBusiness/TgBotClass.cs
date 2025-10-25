@@ -7,11 +7,12 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Tool;
 using Tool.Sockets.TrojanHelper;
+using Tool.Sockets.WebHelper;
 using static OxalisApi.Model.TgBotModel;
 
 namespace OxalisApi.CommonBusiness
 {
-    public partial class TgBotClass(TgBotClassRespose tb, HttpClient Client)
+    public partial class TgBotClass(TgBotClassRespose tb, HttpClient Client) : IDisposable
     {
         public TelegramBotClient _bot = new(tb.TgBot.Token, Client);
         public async Task<TelegramBotClient> Start()
@@ -25,7 +26,10 @@ namespace OxalisApi.CommonBusiness
         }
         public async Task OnError(Exception exception, HandleErrorSource source)
         {
-            await Console.Out.WriteLineAsync(exception.ToString());
+            if (!(exception.InnerException is HttpRequestException httpRequestException && httpRequestException.InnerException is HttpIOException))
+            {
+                await Ext.InfoAsync($"发生其他错误：{exception.Message}");
+            }
         }
         public async Task OnMessage(Message msg, UpdateType type)
         {
@@ -171,6 +175,11 @@ namespace OxalisApi.CommonBusiness
         {
             if (pollAnswer.User != null)
                 await _bot.SendMessage(pollAnswer.User.Id, $"You voted for option(s) id [{string.Join(',', pollAnswer.OptionIds)}]");
+        }
+        public void Dispose()
+        {
+            _bot.Close();
+            GC.SuppressFinalize(this);
         }
         [GeneratedRegex(@"@[A-Za-z0-9_]+_bot\b")]
         private static partial Regex BotRegex();
