@@ -58,9 +58,15 @@ namespace OxalisApi.CommonBusiness
         }
         private async Task Keep()
         {
-            if (WaitDict.TryGetValue("Message", out var dictKeep) && WaitDict.TryGetValue("MessageTitle", out var dictTitleKeep) )
+            string? message = string.Empty;
+            if (WaitDict.TryGetValue("MessageTitle", out var dictTitleKeep))
             {
-                await funcMsg(dictTitleKeep.ToString() + Environment.NewLine + dictKeep.ToString());
+                message = dictTitleKeep.ToString();
+            }
+            if (WaitDict.TryGetValue("Message", out var dictKeep))
+            {
+                message += Environment.NewLine + dictKeep.ToString();
+                await funcMsg(message);
             }
         }
         public async Task<(bool, string)> Prompt()
@@ -134,6 +140,7 @@ namespace OxalisApi.CommonBusiness
                         default:
                             break;
                     }
+                    Ext.Info(Wsmsgutf);
                 }
             }
         }
