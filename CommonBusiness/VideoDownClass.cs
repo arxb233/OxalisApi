@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Org.BouncyCastle.Utilities.Zlib;
+using OxalisApi.Controllers.SD;
 using OxalisApi.Job;
 using Quartz.Util;
 using System;
@@ -90,7 +91,7 @@ namespace OxalisApi.CommonBusiness
             double duration = Convert.ToDouble(await FFMpegWrapper.FFProbeCommand(FFprobeProcess));
             double startTime = duration > 15 ? (int)((duration - 13) / 2) : 0;
             double Time = duration > 15 ? 13 : duration;
-            string arguments = $"-i \"{VideoInfo.OutputPath}\" -ss {startTime} -t {Time} -c:v copy -c:a copy -f mp4 -y \"{VideoInfo.OutputSplitPath}\"";
+            string arguments = $"-i \"{VideoInfo.OutputPath}\" -ss {startTime} -t {Time} -c:v libx264 -c:a aac -f mp4 -y \"{VideoInfo.OutputSplitPath}\"";
             using var Process = FFMpegWrapper.ProcessCreate(arguments, VideoInfo.FFmpegPath);
             await FFMpegWrapper.FFMpegCommand(Process);
         }
