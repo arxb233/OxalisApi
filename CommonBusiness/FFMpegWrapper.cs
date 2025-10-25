@@ -6,19 +6,7 @@ namespace OxalisApi.CommonBusiness
 {
     public class FFMpegWrapper
     {
-        public async Task RunFFMpegCommand(string arguments)
-        {
-            using Process ffmpegProcess = new();
-            string ffmpegPath = @"D:\ffmpeg\bin\ffmpeg.exe";
-            ffmpegProcess.StartInfo.FileName = ffmpegPath;
-            ffmpegProcess.StartInfo.Arguments = arguments;
-            ffmpegProcess.StartInfo.UseShellExecute = true;
-            ffmpegProcess.StartInfo.CreateNoWindow = true;
-            await FFMpegCommand(ffmpegProcess);
-            ffmpegProcess.Start();
-            ffmpegProcess.WaitForExit();
-        }
-        public static async Task MergeFilesWithFFmpeg(string arguments,string ffmpegPath, string videoPath, string audioPath)
+        public static async Task RunFFMpegCommand(string arguments,string ffmpegPath)
         {
             ProcessStartInfo processInfo = new()
             {

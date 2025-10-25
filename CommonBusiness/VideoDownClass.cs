@@ -14,9 +14,9 @@ namespace OxalisApi.CommonBusiness
 {
     public class VideoDownClass()
     {
-        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl, string detail)
+        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl, string detail, string ffmpegPath)
         {
-            if (detail.Trim().StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl); }
+            if (detail.Trim().StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl, ffmpegPath); }
             return await DouyinDownLoad(DownApiUrl, MatchUrl);
         }
         public static async Task<Stream> DouyinDownLoad(string DownApiUrl, string MatchUrl)
@@ -25,7 +25,7 @@ namespace OxalisApi.CommonBusiness
             var video = await HttpClientClass.StreamAsync(url);
             return video;
         }
-        public static async Task<Stream> BilibiliDownLoad(string DownApiUrl, string MatchUrl)
+        public static async Task<Stream> BilibiliDownLoad(string DownApiUrl, string MatchUrl, string ffmpegPath)
         {
             string Aidurl = $"{DownApiUrl}/api/bilibili/web/fetch_video_parts?bv_id={MatchUrl}";
             var AidResult = await HttpClientClass.GetAsync(Aidurl);
@@ -36,13 +36,13 @@ namespace OxalisApi.CommonBusiness
                 {
                     string Videourl = $"{DownApiUrl}/api/bilibili/web/fetch_video_playurl?bv_id={MatchUrl}&cid={cidinfo}";
                     var VideoResult = await HttpClientClass.GetAsync(Videourl);
-                    var video = await BilibiliParse(VideoResult);
+                    var video = await BilibiliParse(VideoResult, ffmpegPath);
                     return video;
                 }
             }
             return Stream.Null;
         }
-        private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath)
+        private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath,string ffmpegPath)
         {
             string videoPath = Path.Combine(Path.GetTempPath(), "video.m4s");
             string audioPath = Path.Combine(Path.GetTempPath(), "audio.m4s");
@@ -61,7 +61,7 @@ namespace OxalisApi.CommonBusiness
                 }
             }
             string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 -y \"{outputPath}\"";
-            await FFMpegWrapper.MergeFilesWithFFmpeg(arguments, @"E:\ffmpeg\bin\ffmpeg.exe", videoPath, audioPath);
+            await FFMpegWrapper.RunFFMpegCommand(arguments,ffmpegPath);
             Stream outputStream =  FileClass.ReadLocalFileAsStream(outputPath);
             return outputStream;
         }

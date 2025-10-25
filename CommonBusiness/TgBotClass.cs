@@ -55,7 +55,7 @@ namespace OxalisApi.CommonBusiness
                         #region Download
                         await SendProcess($"3.当前AutoDL实列可用GPU为{Check}个,满足运行条件！");
                         await SendProcess($"4.视频链接获取成功，正在下载视频，请耐心等待....");
-                        using var video = await VideoDownClass.DownLoad(tb.DownApi.DownApiUrl, MatchUrl.Value, detail);
+                        using var video = await VideoDownClass.DownLoad(tb.Video.DownApiUrl, MatchUrl.Value, detail,tb.Video.FFmpegPath);
                         if (video == Stream.Null || video.Length <= 333) { await SendProcess("视频获取失败！"); return; }
                         #endregion
 
@@ -178,7 +178,7 @@ namespace OxalisApi.CommonBusiness
     public class TgBotClassRespose
     {
         public required TgBotInfo TgBot { get; set; }
-        public required DownApiInfo DownApi { get; set; }
+        public required VideoInfo Video { get; set; }
         public required AutoDLInfo AutoDL { get; set; }
         public required ComfyUIInfo ComfyUI { get; set; }
     }
@@ -190,9 +190,11 @@ namespace OxalisApi.CommonBusiness
         public long ChatVideoGroupId { get; set; }
         public required string CacheFile { get; set; }
     }
-    public class DownApiInfo
+    public class VideoInfo
     {
         public required string DownApiUrl { get; set; }
+
+        public required string FFmpegPath { get; set; }
     }
     public class AutoDLInfo
     {
