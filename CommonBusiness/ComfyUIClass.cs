@@ -58,9 +58,9 @@ namespace OxalisApi.CommonBusiness
         }
         private async Task Keep()
         {
-            if (WaitDict.TryGetValue("Message", out var dictKeep))
+            if (WaitDict.TryGetValue("Message", out var dictKeep) && WaitDict.TryGetValue("MessageTitle", out var dictTitleKeep) )
             {
-                await funcMsg(dictKeep.ToString());
+                await funcMsg(dictTitleKeep.ToString() + Environment.NewLine + dictKeep.ToString());
             }
         }
         public async Task<(bool, string)> Prompt()
@@ -103,14 +103,14 @@ namespace OxalisApi.CommonBusiness
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
-                                WaitDict.GetOrAdd("Message", $"任务已开始,时间:{CreateTime(StartTime)?.StartTime:yy-MM-dd HH:mm:ss}");
+                                WaitDict.GetOrAdd("MessageTitle", $"任务已开始,时间:{CreateTime(StartTime)?.StartTime:yy-MM-dd HH:mm:ss}");
                             }
                             break;
                         case "progress_state":
                             if (Wsmsgutf.TryGet(out var progress_state, "data", "nodes"))
                             {
                                 double percent = PromptJsonVar.Count == 0 ? 0 : (double)progress_state.Count / PromptJsonVar.Count * 100;
-                                WaitDict["Message"] = $"任务进度:{percent:F2}%,耗时:{CreateTime()?.ElapsedTime:hh\\:mm\\:ss}";
+                                WaitDict["MessageTitle"] = $"任务进度:{percent:F2}%,耗时:{CreateTime()?.ElapsedTime:hh\\:mm\\:ss}";
                             }
                             break;
                         case "progress":
@@ -146,7 +146,7 @@ namespace OxalisApi.CommonBusiness
         }
         public async Task Websocket()
         {
-            await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}&test=");
+            await webClientAsync.ConnectAsync($"{ComfyUiUrl}/ws?clientId={client_id}");
             if (!SpinWait.SpinUntil(() => webClientAsync.Connected, TimeSpan.FromHours(_hour)))
             {
                 throw new Exception("任务连接等待超时");
