@@ -6,7 +6,7 @@ namespace OxalisApi.CommonBusiness
 {
     public class FFMpegWrapper
     {
-        public static async Task RunFFMpegCommand(string arguments,string ffmpegPath)
+        public static Process ProcessCreate(string arguments,string ffmpegPath)
         {
             ProcessStartInfo processInfo = new()
             {
@@ -17,8 +17,7 @@ namespace OxalisApi.CommonBusiness
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            using var process = new Process { StartInfo = processInfo };
-            await FFMpegCommand(process);
+            return new Process { StartInfo = processInfo };
         }
         public static async Task FFMpegCommand(Process process)
         {
@@ -27,14 +26,26 @@ namespace OxalisApi.CommonBusiness
                 process.Start();
                 process.BeginOutputReadLine();
                 string error = await process.StandardError.ReadToEndAsync();
-                await Task.Run(() => process.WaitForExit());
-                process.Dispose();
                 if (process.ExitCode != 0) { Ext.Info($"FFmpeg执行失败: {error}"); }
                 Ext.Info("FFmpeg执行成功！");
             }
             catch (Exception ex)
             {
                 Ext.Info($"FFmpeg 处理失败: {ex.Message}");
+            }
+        }
+        public static async  Task<string> FFProbeCommand(Process process)
+        {
+            try
+            {
+                process.Start();
+                var reader = await process.StandardOutput.ReadToEndAsync();
+                return reader;
+            }
+            catch (Exception ex)
+            {
+                Ext.Info($"FFmpeg 处理失败: {ex.Message}");
+                return string.Empty;
             }
         }
     }

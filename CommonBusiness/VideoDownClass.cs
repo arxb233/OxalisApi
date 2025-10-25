@@ -6,6 +6,8 @@ using Quartz.Util;
 using System;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Threading;
+using Telegram.Bot.Types;
 using Tool;
 using Tool.Utils;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -14,55 +16,61 @@ namespace OxalisApi.CommonBusiness
 {
     public class VideoDownClass()
     {
-        public static async Task<Stream> DownLoad(string DownApiUrl, string MatchUrl, string detail, string ffmpegPath)
+        public static async Task<Stream> DownLoad(VideoInfo VideoInfo, string MatchUrl, string detail)
         {
-            if (detail.Trim().StartsWith("BV")) { return await BilibiliDownLoad(DownApiUrl, MatchUrl, ffmpegPath); }
-            return await DouyinDownLoad(DownApiUrl, MatchUrl);
+            if (detail.Trim().StartsWith("BV")) { return await BilibiliDownLoad(VideoInfo, MatchUrl); }
+            return await DouyinDownLoad(VideoInfo, MatchUrl);
         }
-        public static async Task<Stream> DouyinDownLoad(string DownApiUrl, string MatchUrl)
+        public static async Task<Stream> DouyinDownLoad(VideoInfo videoInfo, string MatchUrl)
         {
-            string url = $"{DownApiUrl}/api/download?url={MatchUrl}&prefix=true&with_watermark=false";
+            string url = $"{videoInfo.DownApiUrl}/api/download?url={MatchUrl}&prefix=true&with_watermark=false";
             var video = await HttpClientClass.StreamAsync(url);
-            return video;
+            if (video is not null)
+            {
+                await FileClass.DownloadFileAsStreamAsync(video, videoInfo.OutputPath);
+                await SpiltVideo(videoInfo);
+                Stream outputStream = FileClass.ReadLocalFileAsStream(videoInfo.OutputSplitPath);
+                return outputStream;
+            }
+            return Stream.Null;
         }
-        public static async Task<Stream> BilibiliDownLoad(string DownApiUrl, string MatchUrl, string ffmpegPath)
+        public static async Task<Stream> BilibiliDownLoad(VideoInfo VideoInfo, string MatchUrl)
         {
-            string Aidurl = $"{DownApiUrl}/api/bilibili/web/fetch_video_parts?bv_id={MatchUrl}";
+            string Aidurl = $"{VideoInfo.DownApiUrl}/api/bilibili/web/fetch_video_parts?bv_id={MatchUrl}";
             var AidResult = await HttpClientClass.GetAsync(Aidurl);
             if (AidResult.TryGet(out var cid, "data", "data"))
             {
                 var cidinfo = cid.Select(x => x["cid"].ToString()).FirstOrDefault();
                 if (cidinfo is not null)
                 {
-                    string Videourl = $"{DownApiUrl}/api/bilibili/web/fetch_video_playurl?bv_id={MatchUrl}&cid={cidinfo}";
+                    string Videourl = $"{VideoInfo.DownApiUrl}/api/bilibili/web/fetch_video_playurl?bv_id={MatchUrl}&cid={cidinfo}";
                     var VideoResult = await HttpClientClass.GetAsync(Videourl);
-                    var video = await BilibiliParse(VideoResult, ffmpegPath);
+                    var video = await BilibiliParse(VideoResult, VideoInfo);
                     return video;
                 }
             }
             return Stream.Null;
         }
-        private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath,string ffmpegPath)
+        private static async Task<Stream> BilibiliParse(JsonVar jsonFilePath, VideoInfo VideoInfo)
         {
-            string videoPath = Path.Combine(Path.GetTempPath(), "video.m4s");
-            string audioPath = Path.Combine(Path.GetTempPath(), "audio.m4s");
-            string outputPath = Path.Combine(Path.GetTempPath(), "output.mp4");
             if (jsonFilePath.TryGet(out var jsonFile, "data", "data", "dash"))
             {
                 if (jsonFile.TryGet(out var video, "video"))
                 {
                     var videoUrl = video.Select(x => x["baseUrl"].ToString()).FirstOrDefault();
-                    if (videoUrl is not null) { await DownloadFileAsync(videoUrl, videoPath); }
+                    if (videoUrl is not null) { await DownloadFileAsync(videoUrl, VideoInfo.VideoPath); }
                 }
                 if (jsonFile.TryGet(out var audio, "audio"))
                 {
                     var audioUrl = audio.Select(x => x["baseUrl"].ToString()).FirstOrDefault();
-                    if (audioUrl is not null) { await DownloadFileAsync(audioUrl, audioPath); }
+                    if (audioUrl is not null) { await DownloadFileAsync(audioUrl, VideoInfo.AudioPath); }
                 }
             }
-            string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 -y \"{outputPath}\"";
-            await FFMpegWrapper.RunFFMpegCommand(arguments,ffmpegPath);
-            Stream outputStream =  FileClass.ReadLocalFileAsStream(outputPath);
+            string arguments = $"-i \"{VideoInfo.VideoPath}\" -i \"{VideoInfo.AudioPath}\" -c:v copy -c:a copy -f mp4 -y \"{VideoInfo.OutputPath}\"";
+            using var Process = FFMpegWrapper.ProcessCreate(arguments, VideoInfo.FFmpegPath);
+            await FFMpegWrapper.FFMpegCommand(Process);
+            await SpiltVideo(VideoInfo);
+            Stream outputStream = FileClass.ReadLocalFileAsStream(VideoInfo.OutputSplitPath);
             return outputStream;
         }
         private static async Task DownloadFileAsync(string url, string outputPath)
@@ -74,6 +82,17 @@ namespace OxalisApi.CommonBusiness
             response.EnsureSuccessStatusCode();
             byte[] content = await response.Content.ReadAsByteArrayAsync();
             await File.WriteAllBytesAsync(outputPath, content);
+        }
+        public static async Task SpiltVideo(VideoInfo VideoInfo)
+        {
+            string FFprobeArguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{VideoInfo.VideoPath}\"";
+            using var FFprobeProcess = FFMpegWrapper.ProcessCreate(FFprobeArguments, VideoInfo.FFprobePath);
+            double duration = Convert.ToDouble(await FFMpegWrapper.FFProbeCommand(FFprobeProcess));
+            double startTime = duration > 15 ? (duration - 13) / 2 : 0;
+            double Time = duration > 15 ? 13 : duration;
+            string arguments = $"-i \"{VideoInfo.OutputPath}\" -ss {startTime} -t {Time} -c:v copy -c:a copy -f mp4 -y \"{VideoInfo.OutputSplitPath}\"";
+            using var Process = FFMpegWrapper.ProcessCreate(arguments, VideoInfo.FFmpegPath);
+            await FFMpegWrapper.FFMpegCommand(Process);
         }
     }
 }
