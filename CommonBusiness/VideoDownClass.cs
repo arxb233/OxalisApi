@@ -62,8 +62,7 @@ namespace OxalisApi.CommonBusiness
             }
             string arguments = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a copy -f mp4 -y \"{outputPath}\"";
             await FFMpegWrapper.MergeFilesWithFFmpeg(arguments, @"E:\ffmpeg\bin\ffmpeg.exe", videoPath, audioPath);
-            using Stream outputStream =  FileClass.ReadLocalFileAsStream(outputPath);
-            //File.Delete(videoPath); File.Delete(audioPath); File.Delete(outputPath);
+            Stream outputStream =  FileClass.ReadLocalFileAsStream(outputPath);
             return outputStream;
         }
         private static async Task DownloadFileAsync(string url, string outputPath)
