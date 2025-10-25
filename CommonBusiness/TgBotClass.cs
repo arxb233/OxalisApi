@@ -6,12 +6,14 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Tool;
+using Tool.Sockets.TrojanHelper;
+using static OxalisApi.Model.TgBotModel;
 
 namespace OxalisApi.CommonBusiness
 {
-    public partial class TgBotClass(TgBotClassRespose tb)
+    public partial class TgBotClass(TgBotClassRespose tb, HttpClient Client)
     {
-        public TelegramBotClient _bot = new(tb.TgBot.Token);
+        public TelegramBotClient _bot = new(tb.TgBot.Token, Client);
         public async Task<TelegramBotClient> Start()
         {
             var me = await _bot.GetMe();
@@ -174,48 +176,5 @@ namespace OxalisApi.CommonBusiness
         private static partial Regex BotRegex();
         [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_-]+\/?)|BV[A-Za-z0-9]+")]
         private static partial Regex MatchUrlRegex();
-    }
-    public class TgBotClassRespose
-    {
-        public required TgBotInfo TgBot { get; set; }
-        public required VideoInfo Video { get; set; }
-        public required AutoDLInfo AutoDL { get; set; }
-        public required ComfyUIInfo ComfyUI { get; set; }
-    }
-    public class TgBotInfo
-    {
-        public required string Token { get; set; }
-        public long ChatId { get; set; }
-        public long ChatVideoId { get; set; }
-        public long ChatVideoGroupId { get; set; }
-        public required string CacheFile { get; set; }
-    }
-    public class VideoInfo
-    {
-        public required string DownApiUrl { get; set; }
-        public required string FFmpegPath { get; set; }
-        public required string FFprobePath { get; set; }
-        public required string VideoPath { get; set; }
-        public required string AudioPath { get; set; }
-        public required string OutputPath { get; set; }
-        public required string OutputSplitPath { get; set; }
-    }
-    public class AutoDLInfo
-    {
-        public required string Authorization { get; set; }
-        public required string Instance_uuid { get; set; }
-        public required string Payload { get; set; }
-        public required string Host { get; set; }
-        public int Port { get; set; }
-        public required string Username { get; set; }
-        public required string Password { get; set; }
-    }
-    public class ComfyUIInfo
-    {
-        public required string InputPath { get; set; }
-        public required string[] OutputPath { get; set; }
-        public uint Port { get; set; }
-        public required string Prompt { get; set; }
-        public int WaitHour { get; set; }
     }
 }

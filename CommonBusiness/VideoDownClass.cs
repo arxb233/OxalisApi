@@ -11,6 +11,7 @@ using System.Threading;
 using Telegram.Bot.Types;
 using Tool;
 using Tool.Utils;
+using static OxalisApi.Model.VideoDownloadModel;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OxalisApi.CommonBusiness

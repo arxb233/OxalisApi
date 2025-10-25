@@ -4,8 +4,10 @@ using OxalisApi.CommonBusiness;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Tool;
+using Tool.Sockets.TrojanHelper;
 using Tool.Utils.Data;
 using Tool.Web.Api;
+using static OxalisApi.Model.TgBotModel;
 
 namespace OxalisApi.Controllers.TgBot
 {
@@ -21,7 +23,14 @@ namespace OxalisApi.Controllers.TgBot
             {
                 return ApiOut.Write("TG机器人三个群组ID不允许重复！");
             }
-            var TgBot = new TgBotClass(tb);
+            var TrojanList = new List<TrojanConnect>();
+            for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
+            {
+                TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
+            }
+            var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
+            var Trojanclient = new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
+            var TgBot = new TgBotClass(tb, Trojanclient);
             _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");
         }
