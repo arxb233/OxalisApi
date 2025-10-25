@@ -2,6 +2,16 @@
 <!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
 <Project>
   <PropertyGroup>
-    <_PublishTargetUrl>bin\Release\net9.0\publish\</_PublishTargetUrl>
+    <_PublishTargetUrl>E:\Github\OxalisApi\bin\Release\net9.0\publish\</_PublishTargetUrl>
+    <History>True|2025-10-25T20:46:58.6704790Z||;True|2025-10-26T04:46:22.0925013+08:00||;True|2025-10-26T04:44:27.7521562+08:00||;True|2025-10-26T04:35:52.9870790+08:00||;True|2025-10-26T04:18:24.7409227+08:00||;</History>
+    <LastFailureDetails />
   </PropertyGroup>
+  <ItemGroup>
+    <File Include=".dockerignore">
+      <publishTime>05/13/2025 08:15:46</publishTime>
+    </File>
+    <File Include="Dockerfile">
+      <publishTime>05/13/2025 08:15:46</publishTime>
+    </File>
+  </ItemGroup>
 </Project>
