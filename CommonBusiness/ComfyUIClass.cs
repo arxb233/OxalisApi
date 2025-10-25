@@ -106,6 +106,7 @@ namespace OxalisApi.CommonBusiness
                     switch (Type.ToString())
                     {
                         case "execution_start":
+                        case "execution_cached":
 
                             if (Wsmsgutf.TryGet(out var StartTime, "data", "timestamp"))
                             {
@@ -125,10 +126,23 @@ namespace OxalisApi.CommonBusiness
                                 if (progress.TryGet(out var value, "value") && progress.TryGet(out var max, "max")
                                     && progress.TryGet(out var node, "node") && PromptJsonVar.TryGet(out var NodeTitle, node.ToString(), "_meta", "title"))
                                 {
-                                    WaitDict["Message"] = $"{NodeTitle}-进度:#{value}-#{max}";
+                                    WaitDict["Message"] = $"{NodeTitle}#{WaitDict[node]}-进度:#{value}-#{max}";
+                                    if (value.ToString() == max.ToString())
+                                    {
+                                        foreach (var (index, item) in PromptJsonVar.Index())
+                                        {
+                                            if (item.Key == node)
+                                            {
+                                                double percent = PromptJsonVar.Count == 0 ? 0 : index / PromptJsonVar.Count * 100;
+                                                WaitDict["MessageTitle"] = $"任务进度:{percent:F2}%,耗时:{CreateTime()?.ElapsedTime:hh\\:mm\\:ss}";
+                                            }
+                                        }
+                                        WaitDict[node] = Convert.ToInt32(WaitDict[node].ToString()) + 1;
+                                    }
                                 }
                             }
                             break;
+                        case "TyDev-Utils.ExecutionTime.execution_end":
                         case "execution_success":
                             if (Wsmsgutf.TryGet(out _, "data", "timestamp"))
                             {
@@ -140,7 +154,7 @@ namespace OxalisApi.CommonBusiness
                         default:
                             break;
                     }
-                    Ext.Info(Wsmsgutf);
+                    //Ext.Info(Wsmsgutf.GetJson());
                 }
             }
         }
