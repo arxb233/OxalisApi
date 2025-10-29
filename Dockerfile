@@ -26,10 +26,5 @@ RUN dotnet publish "./OxalisApi.csproj" -c $BUILD_CONFIGURATION -o /app/publish 
 # 此阶段在生产中使用，或在常规模式下从 VS 运行时使用(在不使用调试配置时为默认值)
 FROM base AS final
 WORKDIR /app
-
-USER root
-RUN apt-get update && apt-get install -y ffmpeg
-USER $APP_UID
-
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "OxalisApi.dll"]
