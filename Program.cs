@@ -21,10 +21,6 @@ namespace OxalisApi
             builder.Services.AddAuthorization();
 
             builder.Services.AddQuartzJob<HayFrpJob>("HayFrpJob", "HayFrpJob-trigger", "0 20 08 * * ?"); //Áè³¿1µã30·Ö
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.Listen(IPAddress.Any, 5162);
-            });
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
