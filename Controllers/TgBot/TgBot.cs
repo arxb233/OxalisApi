@@ -15,23 +15,26 @@ namespace OxalisApi.Controllers.TgBot
     {
         private TelegramBotClient? _bot;
         [Ashx(State = AshxState.Post)]
-        public async Task<IApiOut> Create([ApiVal(Val.BodyJson)] TgBotClassRespose tb)
+        public async Task<IApiOut> Create([ApiVal(Val.BodyJson)] TgBotClassRespose[] tbList)
         {
-            if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
-            if (tb is null || Ext.IsEmptyJsonVar(tb.ToJson().JsonVar())) { return ApiOut.Write("创建数据不能有一条为空，请按照示例构造请求！"); }
-            if (tb.TgBot.ChatId == tb.TgBot.ChatVideoId && tb.TgBot.ChatId == tb.TgBot.ChatVideoGroupId && tb.TgBot.ChatVideoId == tb.TgBot.ChatVideoGroupId)
+            foreach (var tb in tbList)
             {
-                return ApiOut.Write("TG机器人三个群组ID不允许重复！");
+                if (_bot is not null) { return ApiOut.Write("已存在机器人，只允许创建一个机器人！"); }
+                if (tb is null || Ext.IsEmptyJsonVar(tb.ToJson().JsonVar())) { return ApiOut.Write("创建数据不能有一条为空，请按照示例构造请求！"); }
+                if (tb.TgBot.ChatId == tb.TgBot.ChatVideoId && tb.TgBot.ChatId == tb.TgBot.ChatVideoGroupId && tb.TgBot.ChatVideoId == tb.TgBot.ChatVideoGroupId)
+                {
+                    return ApiOut.Write("TG机器人三个群组ID不允许重复！");
+                }
+                var TrojanList = new List<TrojanConnect>();
+                for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
+                {
+                    TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
+                }
+                var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
+                var Trojanclient = new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
+                using var TgBot = new TgBotClass(tb, Trojanclient);
+                _bot = await TgBot.Start();
             }
-            var TrojanList = new List<TrojanConnect>();
-            for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
-            {
-                TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
-            }
-            var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
-            var Trojanclient = new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
-            using var TgBot = new TgBotClass(tb, Trojanclient);
-            _bot = await TgBot.Start();
             return ApiOut.Write("Tg机器人创建成功！");
         }
         [Ashx(State = AshxState.Get)]

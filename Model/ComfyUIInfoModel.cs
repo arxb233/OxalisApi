@@ -8,7 +8,7 @@
             public required string[] OutputPath { get; set; }
             public uint Port { get; set; }
             public required string Prompt { get; set; }
-            public int WaitHour { get; set; }
+            public int WaitTimeMin { get; set; }
         }
     }
 }

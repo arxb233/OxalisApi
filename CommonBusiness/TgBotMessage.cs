@@ -38,10 +38,9 @@ namespace OxalisApi.CommonBusiness
                         if (!await Power_on()) return;
                         if (!await SSH()) return;
                         if (!await UploadVideo(down.Item2)) return;
-                        if (!await ComfyUI()) return;
+                        if (!await ComfyUI(tb.ComfyUI.Prompt)) return;
                         if (comfyUIClass is not null) { await comfyUIClass.Task; }
                         if (sshHelper is not null) { await OutPutMessage(sshHelper); }
-    ;
                     }
                     await SendProcess($"{detail}！");
                 }
@@ -144,12 +143,12 @@ namespace OxalisApi.CommonBusiness
             sshHelper?.UploadStream(video, tb.ComfyUI.InputPath);
             return true;
         }
-        private async Task<bool> ComfyUI()
+        private async Task<bool> ComfyUI(string Prompt)
         {
             if (sshHelper is not null)
             {
                 await SendProcess($"8.远程链接成功,正在获取工作流....");
-                using var PromptStream = sshHelper.DownloadStream(tb.ComfyUI.Prompt);
+                using var PromptStream = sshHelper.DownloadStream(Prompt);
                 if (sshHelper.FileExists(tb.ComfyUI.OutputPath[0]))
                 {
                     await SendProcess("输出文件已存在,取消当前任务，返回上条任务文件数据！");
@@ -157,7 +156,7 @@ namespace OxalisApi.CommonBusiness
                 }
                 #region ComfyUI
                 await SendProcess($"9.工作流获取成功,正在启动服务....");
-                comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", tb.ComfyUI.Prompt, PromptStream.ToArray().ToByteString(), tb.ComfyUI.WaitHour, (_msg) => SendProcess(_msg));
+                comfyUIClass = new($"127.0.0.1:{tb.ComfyUI.Port}", Prompt, PromptStream.ToArray().ToByteString(),TimeSpan.FromMinutes(tb.ComfyUI.WaitTimeMin), (_msg) => SendProcess(_msg));
                 //do { if (await comfyUIClass.GetPrompt() is (bool, int) GetPromptResult && GetPromptResult.Item1) { break; } await Task.Delay(TimeSpan.FromSeconds(10)); } while (true);
                 await SendProcess($"10.启动服务成功,正在执行并获取工作流状态....");
                 await comfyUIClass.Websocket();
