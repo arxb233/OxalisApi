@@ -33,7 +33,8 @@ namespace OxalisApi.CommonBusiness
         }
         public async Task OnMessage(Message msg, UpdateType type)
         {
-            await TgBotMessage.OnMessage(msg, _bot, tb);
+            using var Message = new TgBotMessages(tb,_bot,msg);
+            await Message.OnMessage();
         }
         public async Task OnUpdate(Update update)
         {
