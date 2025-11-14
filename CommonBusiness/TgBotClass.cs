@@ -12,7 +12,7 @@ using static OxalisApi.Model.TgBotModel;
 
 namespace OxalisApi.CommonBusiness
 {
-    public partial class TgBotClass(TgBotClassRespose tb, HttpClient Client) : IDisposable
+    public partial class TgBotClass(TgBotClassRespose tb, HttpClient? Client = null) : IDisposable
     {
         public TelegramBotClient _bot = new(tb.TgBot.Token, Client);
         public async Task<TelegramBotClient> Start()
@@ -33,7 +33,7 @@ namespace OxalisApi.CommonBusiness
         }
         public async Task OnMessage(Message msg, UpdateType type)
         {
-            using var Message = new TgBotMessages(tb,_bot,msg);
+            using var Message = new TgBotMessages(tb, _bot, msg);
             await Message.OnMessage();
         }
         public async Task OnUpdate(Update update)

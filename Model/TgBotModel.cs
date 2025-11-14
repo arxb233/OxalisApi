@@ -16,6 +16,7 @@ namespace OxalisApi.Model
         public class TgBotInfo
         {
             public required string Token { get; set; }
+            public required string WebhooksUrl { get; set; }
             public long ChatId { get; set; }
             public long ChatVideoId { get; set; }
             public long ChatVideoGroupId { get; set; }
