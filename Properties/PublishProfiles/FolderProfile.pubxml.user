@@ -2,7 +2,7 @@
 <!-- https://go.microsoft.com/fwlink/?LinkID=208121. -->
 <Project>
   <PropertyGroup>
-    <_PublishTargetUrl>E:\Github\OxalisApi\bin\Release\net9.0\publish\</_PublishTargetUrl>
+    <_PublishTargetUrl>bin\Release\net9.0\publish\</_PublishTargetUrl>
     <History>True|2025-10-28T10:46:08.7307174Z||;True|2025-10-28T18:43:34.5104997+08:00||;True|2025-10-26T04:46:58.6704790+08:00||;True|2025-10-26T04:46:22.0925013+08:00||;True|2025-10-26T04:44:27.7521562+08:00||;True|2025-10-26T04:35:52.9870790+08:00||;True|2025-10-26T04:18:24.7409227+08:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
@@ -11,7 +11,7 @@
       <publishTime>05/13/2025 08:15:46</publishTime>
     </File>
     <File Include="Dockerfile">
-      <publishTime>05/13/2025 08:15:46</publishTime>
+      <publishTime>11/14/2025 17:13:05</publishTime>
     </File>
   </ItemGroup>
 </Project>
