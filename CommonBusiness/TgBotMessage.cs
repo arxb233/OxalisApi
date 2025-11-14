@@ -20,20 +20,20 @@ namespace OxalisApi.CommonBusiness
         public ComfyUIClass? comfyUIClass;
         public async Task OnMessage()
         {
-            if (msg.Text != null && msg.Chat.Id == tb.TgBot.ChatId && BotRegex().Match(msg.Text) is Match MatchBot && MatchBot.Success)
+            try
             {
-                var detail = msg.Text.Replace(MatchBot.Value, "");
-                stringBuilder.AppendLine("我已收到消息:");
-                if (detail.IsNullOrEmpty()) { await _bot.SendMessage(msg.Chat.Id, $"消息内容不能为空！"); return; }
-                StartMessage = await _bot.SendMessage(msg.Chat.Id, stringBuilder.ToString());
-                EndMessage = StartMessage;
-                if (MatchUrlRegex().Match(detail) is Match MatchUrl && MatchUrl.Success)
+                if (msg.Text != null && msg.Chat.Id == tb.TgBot.ChatId && BotRegex().Match(msg.Text) is Match MatchBot && MatchBot.Success)
                 {
-                    try
+                    var detail = msg.Text.Replace(MatchBot.Value, "");
+                    stringBuilder.AppendLine("我已收到消息:");
+                    if (detail.IsNullOrEmpty()) { await _bot.SendMessage(msg.Chat.Id, $"消息内容不能为空！"); return; }
+                    StartMessage = await _bot.SendMessage(msg.Chat.Id, stringBuilder.ToString());
+                    EndMessage = StartMessage;
+                    if (V2VRegex().Match(detail) is Match V2V && V2V.Success)
                     {
                         if (!await Wallet()) return;
                         if (!await GPU()) return;
-                        var down = await Download(MatchUrl.Value, detail);
+                        var down = await Download(V2V.Value, detail);
                         if (!down.Item1) return;
                         if (!await Power_on()) return;
                         if (!await SSH()) return;
@@ -41,29 +41,29 @@ namespace OxalisApi.CommonBusiness
                         if (!await ComfyUI()) return;
                         if (comfyUIClass is not null) { await comfyUIClass.Task; }
                         if (sshHelper is not null) { await OutPutMessage(sshHelper); }
+    ;
                     }
-                    catch (Exception ex)
+                    await SendProcess($"{detail}！");
+                }
+                if (msg.Caption != null && msg.Chat.Id == tb.TgBot.ChatVideoGroupId && BotRegex().Match(msg.Caption) is Match MatchBotGroup && MatchBotGroup.Success)
+                {
+                    try
                     {
-                        await AutoDLClose();
-                        await SendProcess($"❌ 操作失败: {ex.Message}");
+                        string tempPath = Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile);
+                        using var _outputStream = FileClass.ReadLocalFileAsStream(tempPath);
+                        await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
+                        FileClass.DeleteFile(tempPath);
                     }
-                    return;
+                    catch
+                    {
+                        await _bot.SendMessage(msg.Chat.Id, "缓存文件获取或删除失败！", ParseMode.None, msg);
+                    }
                 }
-                await SendProcess($"{detail}！");
             }
-            if (msg.Caption != null && msg.Chat.Id == tb.TgBot.ChatVideoGroupId && BotRegex().Match(msg.Caption) is Match MatchBotGroup && MatchBotGroup.Success)
+            catch (Exception ex)
             {
-                try
-                {
-                    string tempPath = Path.Combine(Path.GetTempPath(), tb.TgBot.CacheFile);
-                    using var _outputStream = FileClass.ReadLocalFileAsStream(tempPath);
-                    await _bot.SendVideo(msg.Chat.Id, _outputStream, "", ParseMode.None, msg);
-                    FileClass.DeleteFile(tempPath);
-                }
-                catch
-                {
-                    await _bot.SendMessage(msg.Chat.Id, "缓存文件获取或删除失败！", ParseMode.None, msg);
-                }
+                await AutoDLClose();
+                await SendProcess($"❌ 操作失败: {ex.Message}");
             }
         }
         private async Task SendProcess(string? text)
@@ -168,15 +168,19 @@ namespace OxalisApi.CommonBusiness
         }
         private async Task AutoDLClose()
         {
-            var Close = await AutoDLClass.Close(tb.AutoDL.Authorization, tb.AutoDL.Instance_uuid);
-            if (!Close) { await SendProcess($"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
+            if (await AutoDLClass.Check(tb.AutoDL.Authorization, tb.AutoDL.Instance_uuid) == -1)
+            {
+                var Close = await AutoDLClass.Close(tb.AutoDL.Authorization, tb.AutoDL.Instance_uuid);
+                if (!Close) { await SendProcess($"当前AutoDL实列关机失败,未关机将持续计费,请火速联系管理员！"); return; }
+            }
             await SendProcess($"13.实列已关闭！");
         }
 
         [GeneratedRegex(@"@[A-Za-z0-9_]+_bot\b")]
         private static partial Regex BotRegex();
+
         [GeneratedRegex(@"https?:\/\/(?:v\.douyin\.com\/[A-Za-z0-9_-]+\/?)|BV[A-Za-z0-9]+")]
-        private static partial Regex MatchUrlRegex();
+        private static partial Regex V2VRegex();
 
         public void Dispose()
         {
