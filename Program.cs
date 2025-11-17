@@ -1,9 +1,10 @@
+using OxalisApi.CommonBusiness;
+using OxalisApi.Job;
 using Quartz;
+using System.Net;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using Tool.Web;
-using OxalisApi.Job;
-using OxalisApi.CommonBusiness;
-using System.Net;
 
 namespace OxalisApi
 {
@@ -21,10 +22,15 @@ namespace OxalisApi
             builder.Services.AddAuthorization();
 
             builder.Services.AddQuartzJob<HayFrpJob>("HayFrpJob", "HayFrpJob-trigger", "0 20 08 * * ?"); //¡Ë≥ø1µ„30∑÷
+
+#if DEBUG
+            builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, "http://0.0.0.0:5162");
+#endif
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
-            
+
             app.UseRouting();
             app.UseAuthorization();
             app.MapAshxs();
