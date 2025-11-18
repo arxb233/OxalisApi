@@ -25,14 +25,7 @@ namespace OxalisApi.Controllers.TgBot
                 {
                     return ApiOut.Write("TG机器人三个群组ID不允许重复！");
                 }
-                var TrojanList = new List<TrojanConnect>();
-                for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
-                {
-                    TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
-                }
-                var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
-                var Trojanclient = new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
-                using var TgBot = new TgBotClass(tb, Trojanclient);
+                using var TgBot = new TgBotClass(tb, Ext.TrojanToHttpClient(tb));
                 _bot = await TgBot.Start();
             }
             return ApiOut.Write("Tg机器人创建成功！");

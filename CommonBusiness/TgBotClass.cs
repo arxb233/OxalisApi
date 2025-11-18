@@ -18,6 +18,7 @@ namespace OxalisApi.CommonBusiness
         public async Task<TelegramBotClient> Start()
         {
             var me = await _bot.GetMe();
+            _bot.DeleteWebhook().Wait();
             Ext.Info($"Hello, World! I am user {me.Id} and my name is {me.FirstName}.");
             _bot.OnError += OnError;
             _bot.OnMessage += OnMessage;

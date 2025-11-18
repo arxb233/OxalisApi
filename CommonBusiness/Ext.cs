@@ -2,8 +2,10 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Tool;
+using Tool.Sockets.TrojanHelper;
 using Tool.Utils;
 using Tool.Utils.Data;
+using static OxalisApi.Model.TgBotModel;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace OxalisApi.CommonBusiness
@@ -65,6 +67,16 @@ namespace OxalisApi.CommonBusiness
                 }
             }
             return false;
+        }
+        public static HttpClient? TrojanToHttpClient(TgBotClassRespose tb)
+        {
+            var TrojanList = new List<TrojanConnect>();
+            for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
+            {
+                TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
+            }
+            var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
+            return new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };
         }
     }
 }
