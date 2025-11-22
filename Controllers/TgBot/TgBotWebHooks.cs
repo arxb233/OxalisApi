@@ -46,13 +46,9 @@ namespace OxalisApi.Controllers.TgBot
         [Ashx(State = AshxState.Post)]
         public async Task<IApiOut> GetWebhookInfo([ApiVal(Val.BodyJson)] TgBotClassRespose tb)
         {
-            if (!bots.ContainsKey(tb.TgBot.Token))
-            {
-                var TgBot = new TgBotClass(tb, Ext.TrojanToHttpClient(tb));
-                var webhookinfo = await TgBot._bot.GetWebhookInfo();
-                return new JsonOut(webhookinfo);
-            }
-            return ApiOut.Write("没有找到");
+            var TgBot = new TgBotClass(tb, Ext.TrojanToHttpClient(tb));
+            var webhookinfo = await TgBot._bot.GetWebhookInfo();
+            return new JsonOut(webhookinfo);
         }
 
         [Ashx(State = AshxState.Get)]
