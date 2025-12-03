@@ -31,11 +31,12 @@ namespace OxalisApi.Controllers.TgBot
         public async Task<IApiOut> Webhook([ApiVal(Val.RouteKey, "token")] string token, [ApiVal(Val.BodyString)] string updatejson)
         {
             var update = updatejson.Json<Update>(options);
-            if (update is not null && update?.ChannelPost is not null)
+            var WebhookMessage = update?.ChannelPost is not null ? update?.ChannelPost : update?.Message;
+            if (update is not null && WebhookMessage is not null)
             {
                 if (bots.TryGetValue(token, out TelegramBotClient? botClient))
                 {
-                    using var Message = new TgBotMessages(botsInfo[token], botClient, update.ChannelPost);
+                    using var Message = new TgBotMessages(botsInfo[token], botClient, WebhookMessage);
                     await Message.OnMessage();
                     return ApiOut.Write("OK");
                 }
