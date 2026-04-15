@@ -1,7 +1,9 @@
 ﻿using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Tool;
+using Tool.Sockets.Kernels;
 using Tool.Sockets.TrojanHelper;
 using Tool.Utils;
 using Tool.Utils.Data;
@@ -73,7 +75,7 @@ namespace OxalisApi.CommonBusiness
             var TrojanList = new List<TrojanConnect>();
             for (var i = tb.TgBot.Trojan.Port.Start; i <= tb.TgBot.Trojan.Port.End; i++)
             {
-                TrojanList.Add(new TrojanConnect(tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
+                TrojanList.Add(new TrojanConnect(IPAddress.Parse(tb.TgBot.Trojan.IP),tb.TgBot.Trojan.Host, i, tb.TgBot.Trojan.Password));
             }
             var _Trojan = new TrojanHttpHandlerFactory([.. TrojanList]);
             return new HttpClient(_Trojan.HttpMessageHandler) { Timeout = TimeSpan.FromSeconds(300) };

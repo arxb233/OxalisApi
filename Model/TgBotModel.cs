@@ -28,6 +28,7 @@ namespace OxalisApi.Model
             public required string Host { get; set; }
             public required RangePort Port { get; set; }
             public required string Password { get; set; }
+            public required string IP { get; set; } = "127.0.0.1";
         }
         public class RangePort
         {
