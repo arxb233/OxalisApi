@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Headers;
+using System.Text.Json;
 using Tool;
 using Tool.Utils;
 
@@ -10,14 +11,14 @@ namespace OxalisApi.CommonBusiness
         {
             return await SendAsync(HttpMethod.Get, url, "");
         }
-        public static async Task<JsonVar> PostAsync(string url, object json)
+        public static async Task<JsonVar> PostAsync(string url, object json, JsonSerializerOptions? options = null)
         {
-            return await SendAsync(HttpMethod.Post, url, json);
+            return await SendAsync(HttpMethod.Post, url, json, options);
         }
-        public static async Task<JsonVar> SendAsync(HttpMethod HttpMethod, string url, object json)
+        public static async Task<JsonVar> SendAsync(HttpMethod HttpMethod, string url, object json, JsonSerializerOptions? options = null)
         {
             using var request = HttpHelpers.CreateHttpRequestMessage(HttpMethod, url);
-            if (HttpMethod == HttpMethod.Post) { request.Content = new StringContent(json.ToJson(), new MediaTypeHeaderValue("application/json")); }
+            if (HttpMethod == HttpMethod.Post) { request.Content = new StringContent(json.ToJson(options), new MediaTypeHeaderValue("application/json")); }
             using var response = await HttpHelpers.SendAsync(request);
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
